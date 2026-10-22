@@ -167,7 +167,7 @@ function modeEntry(kind, title, subtitle) {
 function homePage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好';
-  return `<img class="mobile-brand" src="assets/zibloo-lockup.svg" width="136" height="37" alt="zibloo"><header class="page-header"><div><p class="greeting">${icon('sun')}${t(greeting)}</p><h1>${t('今天，想一起做点什么？')}</h1></div>${btn('go-settings',icon('settings'),'avatar-button',`aria-label="${t('设置')}"`)}</header><p class="home-intro">${t('留一点时间，做喜欢的事。')}</p>
+  return `${Zibloo.logo('mobile-brand')}<header class="page-header"><div><p class="greeting">${icon('sun')}${t(greeting)}</p><h1>${t('今天，想一起做点什么？')}</h1></div>${btn('go-settings',icon('settings'),'avatar-button',`aria-label="${t('设置')}"`)}</header><p class="home-intro">${t('留一点时间，做喜欢的事。')}</p>
     <section class="home-stage" aria-label="${t('小窝')}"><div class="ocean-floor"></div><span class="bubble one"></span><span class="bubble two"></span><span class="bubble three"></span><span class="bubble four"></span>
     <button class="mascot-main" data-action="hello" aria-label="${t('点点我，打个招呼')}">${image()}</button>
     ${modeEntry('training','训练','间歇与节奏')}${modeEntry('focus','专注','留一点安静')}${modeEntry('reminders','记事','到点叫你')}
@@ -299,7 +299,7 @@ function settingsPage() {
     <div class="setting-row"><span>${t('语音播报')}</span>${toggle('toggle-voice',p.voice,t('语音播报'))}</div><div class="setting-row"><span>${t('减少动态效果')}</span>${toggle('toggle-reduced',p.reduced,t('减少动态效果'))}</div>
     <div class="setting-row">${btn('preview-sound',t('在原型中试听提示音'),'text-button')}</div></div></section>
     <section class="settings-section"><h2>${t('数据与关于')}</h2><div class="settings-group"><div class="setting-row"><span>${t('导出记录')}<small>${t('导出本次原型中的示例与体验记录')}</small></span>${btn('export',icon('export'),'setting-value',`aria-label="${t('导出记录')}"`)}</div><div class="setting-row"><span>${t('版本')}</span><span class="setting-value">${t('P0 交互原型')}</span></div></div></section>
-    <p class="info-note">${icon('info')}<span>${t('网页演示，不承诺后台提醒。安卓可靠性需后续真机验收。')}</span></p><div class="brand-footer"><img src="assets/zibloo-lockup.svg" alt="zibloo" width="142" height="39"></div>`;
+    <p class="info-note">${icon('info')}<span>${t('网页演示，不承诺后台提醒。安卓可靠性需后续真机验收。')}</span></p><div class="brand-footer">${Zibloo.logo()}</div>`;
 }
 function openDialog(content) {
   if(!overlay.firstElementChild) previousFocus=document.activeElement;

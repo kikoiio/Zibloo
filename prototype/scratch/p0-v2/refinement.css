@@ -106,9 +106,9 @@ h1{font-weight:500;font-size:27px;letter-spacing:-.7px}
   .mobile-brand{display:block;width:136px;height:auto;margin-bottom:23px}
   h1{font-size:23px}.greeting{font-size:11px;margin-bottom:6px}.home-intro{font-size:11px;margin-top:6px}
   .page-header{gap:10px}.avatar-button{width:40px;height:40px}
-  .home-stage{height:378px;margin-top:3px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:end;gap:8px;padding-bottom:2px}
+  .home-stage{height:398px;margin-top:3px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-content:end;gap:8px;padding-bottom:2px}
   .home-stage:before{inset:10% 5% 26%}
-  .mascot-main{width:min(270px,90%);top:34%;left:50%}
+  .mascot-main{width:min(270px,90%);top:32%;left:50%}
   .mode-entry,.mode-training,.mode-focus,.mode-reminders{position:relative;inset:auto;min-width:0;width:100%;padding:12px 3px 10px;display:flex;flex-direction:column;gap:6px;text-align:center;border-radius:17px;transform:none}
   .mode-entry:hover{transform:none}.mode-entry .mode-icon{width:30px;height:30px;border-radius:11px}.mode-entry .icon{width:19px;height:19px}.mode-entry strong{font-size:12px}.mode-entry small{font-size:9px;white-space:nowrap}
   .character-caption{bottom:112px;font-size:10px}.character-caption small{font-size:9px}
@@ -122,5 +122,5 @@ h1{font-weight:500;font-size:27px;letter-spacing:-.7px}
   .section-heading .muted{font-size:10px}.subtitle{line-height:1.8}
   .about-mark{margin-top:23px}.history-item{gap:10px}.week-change{font-size:10px}
 }
-@media(max-width:360px){main{padding-left:16px;padding-right:16px}.mobile-brand{margin-bottom:20px}.home-stage{height:366px;gap:6px}.mascot-main{width:254px}.character-caption{bottom:111px}.mode-entry small{font-size:8px}h1{font-size:21px}.review-bar{padding:0 10px}.review-character select{width:99px}}
+@media(max-width:360px){main{padding-left:16px;padding-right:16px}.mobile-brand{margin-bottom:12px}.home-stage{height:366px;gap:6px}.mascot-main{width:236px;top:30%}.quick-section{margin-top:18px}.character-caption{bottom:111px}.mode-entry small{font-size:8px}h1{font-size:21px}.review-bar{padding:0 10px}.review-character select{width:99px}}
 @media(prefers-reduced-motion:reduce){.progress-value{transition:none}}

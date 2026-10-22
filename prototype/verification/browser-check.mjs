@@ -35,7 +35,7 @@ async function open(viewport, { touch = false, clock = false, reduced = false } 
   page.on('pageerror', error => errors.push(error.message));
   if (clock) await page.clock.install({ time: new Date('2026-10-22T14:00:00Z') });
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.locator('.mascot-main .zibloo-vector').waitFor();
+  await page.locator('.mascot-main .zibloo-art image').waitFor();
   return { context, page };
 }
 async function action(page, name) { await page.locator(`[data-action="${name}"]:visible`).click(); }
@@ -46,9 +46,7 @@ async function noOverflow(page, label) {
 }
 async function clearCaption(page, label) {
   const bounds=await page.evaluate(()=>{
-    const body=document.querySelector('.mascot-main .zibloo-body');
-    const box=body.getBBox(), matrix=body.getScreenCTM();
-    const bottom=Math.max(...[[box.x,box.y],[box.x+box.width,box.y],[box.x,box.y+box.height],[box.x+box.width,box.y+box.height]].map(([x,y])=>new DOMPoint(x,y).matrixTransform(matrix).y));
+    const bottom=document.querySelector('.mascot-main .zibloo-art').getBoundingClientRect().bottom;
     return {bottom,caption:document.querySelector('.character-caption').getBoundingClientRect().top};
   });
   assert.ok(bounds.bottom<=bounds.caption+1,`${label}: character overlaps caption ${JSON.stringify(bounds)}`);
@@ -74,20 +72,26 @@ try {
 
   {
     const { context, page } = await open({width:1280,height:900});
-    const path = page.locator('.mascot-main .arm-face').nth(3);
-    const first = await path.getAttribute('d');
+    const art = page.locator('.mascot-main .zibloo-art');
+    assert.equal(await art.getAttribute('data-source'),'approved-B2');
+    assert.equal(await art.getAttribute('viewBox'),'470 25 800 735');
+    assert.equal(await art.locator('image').getAttribute('href'),'assets/reference-B2.png');
+    assert.equal(await art.locator('path').count(),0,'Character must display the approved original, not a redraw');
+    assert.ok(await page.locator('[data-source="approved-C3"]').count()>0);
+    const transform=()=>art.evaluate(node=>getComputedStyle(node).transform);
+    const first = await transform();
     await page.waitForTimeout(550);
-    assert.notEqual(await path.getAttribute('d'), first, 'Idle arms should deform');
+    assert.notEqual(await transform(), first, 'The approved character should drift gently');
     await page.selectOption('#character-preview', 'focus');
-    const quiet = await path.getAttribute('d');
+    const quiet = await transform();
     await page.waitForTimeout(450);
-    assert.equal(await path.getAttribute('d'), quiet, 'Focus should stay quiet');
+    assert.equal(await transform(), quiet, 'Focus should stay quiet');
     await page.selectOption('#character-preview', 'auto');
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.waitForFunction(()=>document.querySelector('#character-state-label')?.textContent.includes('已减少动态效果'));
-    const still = await path.getAttribute('d');
+    const still = await transform();
     await page.waitForTimeout(450);
-    assert.equal(await path.getAttribute('d'), still, 'System reduced motion should stop deformation');
+    assert.equal(await transform(), still, 'System reduced motion should stop drifting');
     await clearCaption(page,'system reduced motion');
     await capture(page, 'reduced-motion-home');
     await page.emulateMedia({reducedMotion:'no-preference'});
@@ -97,7 +101,7 @@ try {
     await page.keyboard.press('Enter');
     await page.getByRole('status').getByText('你好呀，我是 Zibloo！').waitFor();
     await capture(page, 'keyboard-greeting');
-    note('Motion: arms change continuously; focus and OS reduced motion freeze them; keyboard greeting works');
+    note('Approved B2 source displayed without redraw; C3 original logo displayed; gentle drift stops during focus/reduced motion; keyboard greeting works. Independent arm animation is deferred.');
     await context.close();
   }
 
@@ -196,10 +200,10 @@ try {
     await capture(page, 'phone-settings-english');
     await nav(page, 'home');
     assert.ok((await page.locator('h1').textContent()).includes('What shall we do together'));
-    const arm = page.locator('.mascot-main .arm-face').first();
-    const still = await arm.getAttribute('d');
+    const art = page.locator('.mascot-main .zibloo-art');
+    const still = await art.evaluate(node=>getComputedStyle(node).transform);
     await page.waitForTimeout(450);
-    assert.equal(await arm.getAttribute('d'),still);
+    assert.equal(await art.evaluate(node=>getComputedStyle(node).transform),still);
     await clearCaption(page,'English app reduced motion');
     await capture(page, 'phone-home-english');
     note('Reminders: weekly form survives redraw, create/edit/disable/delete/preview; English and app reduced motion work');
