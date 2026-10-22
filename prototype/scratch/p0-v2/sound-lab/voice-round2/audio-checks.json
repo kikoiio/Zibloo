@@ -1,0 +1,158 @@
+[
+  {
+    "file": "clear-greet.wav",
+    "seconds": 0.867,
+    "peakDbFS": -4.53,
+    "rmsDbFS": -18.71
+  },
+  {
+    "file": "clear-work.wav",
+    "seconds": 0.765,
+    "peakDbFS": -4.44,
+    "rmsDbFS": -19.05
+  },
+  {
+    "file": "clear-rest.wav",
+    "seconds": 0.786,
+    "peakDbFS": -3.93,
+    "rmsDbFS": -19.06
+  },
+  {
+    "file": "clear-complete.wav",
+    "seconds": 0.915,
+    "peakDbFS": -4.5,
+    "rmsDbFS": -18.6
+  },
+  {
+    "file": "clear-reminder.wav",
+    "seconds": 1.257,
+    "peakDbFS": -3.61,
+    "rmsDbFS": -19.91
+  },
+  {
+    "file": "clear-sequence.wav",
+    "seconds": 5.523,
+    "peakDbFS": -3.61,
+    "rmsDbFS": -20.91
+  },
+  {
+    "file": "creature-greet.wav",
+    "seconds": 0.989,
+    "peakDbFS": -9.07,
+    "rmsDbFS": -17.98
+  },
+  {
+    "file": "creature-work.wav",
+    "seconds": 0.799,
+    "peakDbFS": -9.13,
+    "rmsDbFS": -18.36
+  },
+  {
+    "file": "creature-rest.wav",
+    "seconds": 0.899,
+    "peakDbFS": -7.92,
+    "rmsDbFS": -18.23
+  },
+  {
+    "file": "creature-complete.wav",
+    "seconds": 1.094,
+    "peakDbFS": -9.71,
+    "rmsDbFS": -17.8
+  },
+  {
+    "file": "creature-reminder.wav",
+    "seconds": 1.234,
+    "peakDbFS": -9.21,
+    "rmsDbFS": -19.23
+  },
+  {
+    "file": "creature-sequence.wav",
+    "seconds": 5.826,
+    "peakDbFS": -7.92,
+    "rmsDbFS": -20.01
+  },
+  {
+    "file": "motif-greet.wav",
+    "seconds": 0.895,
+    "peakDbFS": -9.97,
+    "rmsDbFS": -18.15
+  },
+  {
+    "file": "motif-work.wav",
+    "seconds": 0.705,
+    "peakDbFS": -9.19,
+    "rmsDbFS": -18.68
+  },
+  {
+    "file": "motif-rest.wav",
+    "seconds": 0.84,
+    "peakDbFS": -8.93,
+    "rmsDbFS": -18.34
+  },
+  {
+    "file": "motif-complete.wav",
+    "seconds": 1.0,
+    "peakDbFS": -9.56,
+    "rmsDbFS": -17.97
+  },
+  {
+    "file": "motif-reminder.wav",
+    "seconds": 1.14,
+    "peakDbFS": -9.9,
+    "rmsDbFS": -19.51
+  },
+  {
+    "file": "motif-sequence.wav",
+    "seconds": 5.485,
+    "peakDbFS": -8.93,
+    "rmsDbFS": -20.35
+  },
+  {
+    "file": "compare-three.wav",
+    "seconds": 4.701,
+    "peakDbFS": -4.53,
+    "rmsDbFS": -20.58
+  },
+  {
+    "file": "texture-murmur.wav",
+    "seconds": 0.989,
+    "peakDbFS": -9.07,
+    "rmsDbFS": -17.98
+  },
+  {
+    "file": "texture-glass.wav",
+    "seconds": 0.989,
+    "peakDbFS": -9.13,
+    "rmsDbFS": -18.25
+  },
+  {
+    "file": "texture-wood.wav",
+    "seconds": 0.989,
+    "peakDbFS": -6.87,
+    "rmsDbFS": -18.24
+  },
+  {
+    "file": "texture-orbit.wav",
+    "seconds": 0.989,
+    "peakDbFS": -9.0,
+    "rmsDbFS": -18.25
+  },
+  {
+    "file": "texture-air.wav",
+    "seconds": 0.989,
+    "peakDbFS": -8.19,
+    "rmsDbFS": -18.28
+  },
+  {
+    "file": "texture-pluck.wav",
+    "seconds": 0.989,
+    "peakDbFS": -9.26,
+    "rmsDbFS": -18.25
+  },
+  {
+    "file": "texture-pulse.wav",
+    "seconds": 0.989,
+    "peakDbFS": -8.96,
+    "rmsDbFS": -18.25
+  }
+]

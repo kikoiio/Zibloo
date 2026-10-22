@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f3">
+  <title>Zibloo · 它会怎样叫自己的名字？</title>
+  <link rel="icon" href="../../assets/zibloo-symbol.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../lab.css">
+  <link rel="stylesheet" href="voice.css">
+  <script src="voice.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a href="../../" aria-label="返回 Zibloo 原型"><img src="../../assets/zibloo-lockup.svg" alt="Zibloo" width="164" height="63"></a><a class="back" href="../index.html">回听第一轮 ↗</a></header>
+  <main>
+    <section class="voice-hero">
+      <div class="intro"><p class="eyebrow">VOICE EXPLORATIONS · ROUND 02</p><h1>它会怎样，<br>叫自己的名字？</h1><p class="lead">同一个「Zi—bloo」，三种表达。先听招牌叫声，再听它怎样催你开始、陪你休息、为你开心。</p><div class="intro-notes"><span>声音草稿 · 由你重新选</span><span>不会更改计时器声音</span></div><button id="compare-names" class="dark" disabled>▷ 连听 A / B / C 的招牌叫声</button></div>
+      <div class="portrait"><div class="call-label" id="character-call">Zi—bloo?</div><img src="../../assets/zibloo-character.svg" alt="已选的 Zibloo 角色" width="300" height="280"><span>先听听，哪一种像它？</span></div>
+    </section>
+    <section class="compare" aria-label="同场景比较"><div><h2>名字，要听得多清楚？</h2><p>三种叫法都配了四种日常语气，也可以逐段比较。</p></div><div class="compare-controls"><label class="sr-only" for="event-select">比较场景</label><select id="event-select"><option value="greet">招牌叫声</option><option value="work">开始工作</option><option value="rest">进入休息</option><option value="complete">全部完成</option><option value="reminder">日常提醒</option></select><button id="compare-all" disabled>依次比较 3 种</button></div></section>
+    <section class="styles voice-styles" id="voices" aria-label="三种叫法"><p>正在准备声音…</p></section>
+    <p class="listening-note">每组「四种语气」的顺序：开始工作 → 进入休息 → 全部完成 → 日常提醒。名字在完整招呼与庆祝时更展开，休息时收成一句柔软的尾音。</p>
+    <details class="texture-section" id="texture-section"><summary><span>再给它，选一种声音质感</span><small>你选过的 02–08，都保留了</small></summary><p class="texture-explainer">下面先用 B 的同一句「zi～bluu」示范：保留叫法，分别加入你选过的音色。可以只选叫法，也可以同时留下喜欢的质感。</p><div id="textures" class="textures"></div></details>
+    <section class="shortlist"><div><h2>这次，你更喜欢哪一个？</h2><p id="shortlist-text" aria-live="polite">给喜欢的叫法加入候选，或再选一个声音质感。</p></div><button id="copy-choice" disabled>复制我的选择</button></section>
+    <p class="footnote">A 是机械合成发音，B 与 C 是原创拟声草稿。重点是比较名字辨识度与角色感；最终发声质感、音量和语气仍可继续打磨。选择只保存在本机浏览器。</p>
+  </main>
+  <footer class="player" aria-label="试听播放器"><div class="now"><span id="play-indicator" aria-hidden="true"></span><div><strong id="now-title">先听一声 Zi—bloo</strong><span id="now-detail">建议先用适中的音量试听</span></div></div><audio id="audio" controls preload="none" aria-label="Zibloo 第二轮声音试听"></audio><button id="stop">停止</button><p id="player-status" class="sr-only" role="status" aria-live="polite"></p></footer>
+</body>
+</html>

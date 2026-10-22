@@ -87,6 +87,7 @@ const copy = {
   '声音未能启用，请点按声音试听后重试。':'Audio could not start. Tap the sound preview and try again.',
   '探索 Zibloo 的声音':'Explore Zibloo’s voice',
   '8 种音色，分别试听工作、休息与提醒':'8 voices for work, breaks, and reminders',
+  '听 Zibloo 怎样叫自己的名字':'Hear Zibloo call its own name',
 };
 const state = {
   locale: 'zh-CN', page: 'home', speed: 1, guidance: 'cues', characterPreview: 'auto',
@@ -304,7 +305,7 @@ function settingsPage() {
     <label class="setting-row"><span>${t('提示音')}</span><select id="sound">${[['zibloo','Zibloo 叫声'],['chime','清脆'],['silent','静音']].map(([v,l])=>`<option value="${v}" ${p.sound===v?'selected':''}>${t(l)}</option>`).join('')}</select></label>
     <label class="setting-row"><span>${t('震动强度')}</span><select id="vibration">${[['light','轻'],['standard','标准'],['strong','强']].map(([v,l])=>`<option value="${v}" ${p.vibration===v?'selected':''}>${t(l)}</option>`).join('')}</select></label>
     <div class="setting-row"><span>${t('语音播报')}</span>${toggle('toggle-voice',p.voice,t('语音播报'))}</div><div class="setting-row"><span>${t('减少动态效果')}</span>${toggle('toggle-reduced',p.reduced,t('减少动态效果'))}</div>
-    <div class="setting-row">${btn('preview-sound',t('在原型中试听提示音'),'text-button')}</div><a class="setting-row" href="sound-lab/index.html"><span>${t('探索 Zibloo 的声音')}<small>${t('8 种音色，分别试听工作、休息与提醒')}</small></span>${icon('chevron')}</a></div></section>
+    <div class="setting-row">${btn('preview-sound',t('在原型中试听提示音'),'text-button')}</div><a class="setting-row" href="sound-lab/voice-round2/index.html"><span>${t('探索 Zibloo 的声音')}<small>${t('听 Zibloo 怎样叫自己的名字')}</small></span>${icon('chevron')}</a></div></section>
     <section class="settings-section"><h2>${t('数据与关于')}</h2><div class="settings-group"><div class="setting-row"><span>${t('导出记录')}<small>${t('导出本次原型中的示例与体验记录')}</small></span>${btn('export',icon('export'),'setting-value',`aria-label="${t('导出记录')}"`)}</div><div class="setting-row"><span>${t('版本')}</span><span class="setting-value">${t('P0 交互原型')}</span></div></div></section>
     <p class="info-note">${icon('info')}<span>${t('网页演示，不承诺后台提醒。安卓可靠性需后续真机验收。')}</span></p><div class="brand-footer">${Zibloo.logo()}</div>`;
 }

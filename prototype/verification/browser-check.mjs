@@ -314,6 +314,69 @@ try {
     note('Sound lab: 8 styles × 4 events plus 8 sequences decode with nonzero unclipped signal; playback, switching, comparison queue, Stop, persisted shortlist and three responsive widths passed. Timbre/emotion still need human listening.');
     await context.close();
   }
+  {
+    const context=await browser.newContext({viewport:{width:1280,height:900},locale:'zh-CN'});
+    await context.grantPermissions(['clipboard-read','clipboard-write']);
+    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(url+'/sound-lab/index.html');
+    const previous=['murmur','glass','wood','orbit','air','pluck','pulse'];
+    await page.evaluate(previous=>localStorage.setItem('zibloo-sound-shortlist',JSON.stringify(previous)),previous);
+    await page.goto(url+'/sound-lab/voice-round2/index.html');
+    await page.locator('.voice-card').last().waitFor();
+    assert.equal(await page.locator('.voice-card').count(),3);
+    assert.equal(await page.locator('.portrait img').getAttribute('src'),'../../assets/zibloo-character.svg');
+    const files=await page.evaluate(async()=>{
+      const m=await(await fetch('manifest.json')).json(),decoder=new OfflineAudioContext(1,44100,44100);
+      const files=[...m.voices.flatMap(v=>[...Object.values(v.clips),v.sequence]),m.comparison,...m.textures.map(t=>t.file)],results=[];
+      for(const file of files){
+        const response=await fetch(file);if(!response.ok)throw new Error(file+' unavailable');
+        const buffer=await decoder.decodeAudioData(await response.arrayBuffer()),samples=buffer.getChannelData(0);
+        let peak=0,energy=0;for(const value of samples){if(!Number.isFinite(value))throw new Error(file+' invalid samples');peak=Math.max(peak,Math.abs(value));energy+=value*value;}
+        results.push({file,seconds:buffer.duration,peak,rms:Math.sqrt(energy/samples.length),endPeak:Math.max(...samples.slice(-128).map(Math.abs))});
+      }
+      return results;
+    });
+    assert.equal(files.length,26);
+    for(const file of files){assert.ok(file.peak>.05&&file.peak<.7,JSON.stringify(file));assert.ok(file.rms>.02,JSON.stringify(file));assert.ok(file.endPeak<.001,JSON.stringify(file));}
+    await writeFile(resolve(output,'name-voice-files.json'),JSON.stringify(files,null,2));
+    await page.locator('[data-voice="clear"][data-event="greet"]').click();
+    await page.waitForFunction(()=>!document.querySelector('audio').paused&&document.querySelector('audio').currentTime>0);
+    await page.locator('[data-voice="creature"][data-event="rest"]').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentSrc.endsWith('creature-rest.wav')&&!document.querySelector('audio').paused);
+    await page.selectOption('#event-select','greet');await page.locator('#compare-all').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentSrc.endsWith('creature-greet.wav')&&!document.querySelector('audio').paused);
+    await page.locator('#stop').click();await page.waitForTimeout(1800);
+    assert.ok(await page.locator('audio').evaluate(el=>el.paused),'Stop cancels queued name calls');
+    await page.locator('#compare-names').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentSrc.endsWith('compare-three.wav')&&!document.querySelector('audio').paused);
+    await page.locator('#stop').click();
+    await page.locator('[data-favorite="creature"]').click();
+    await page.locator('#texture-section summary').click();await page.locator('[data-texture-choice="wood"]').check();
+    await page.reload();await page.locator('[data-favorite="creature"][aria-pressed="true"]').waitFor();
+    await page.locator('#texture-section summary').click();
+    assert.ok(await page.locator('[data-texture-choice="wood"]').isChecked());
+    assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('zibloo-sound-shortlist'))),previous,'Round 1 shortlist must survive');
+    await page.locator('[data-texture="wood"]').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentSrc.endsWith('texture-wood.wav')&&!document.querySelector('audio').paused);
+    assert.ok(await page.locator('#now-title').textContent().then(text=>text.includes('B + 04')));
+    await page.locator('#stop').click();await page.locator('#copy-choice').click();
+    const copied=await page.evaluate(()=>navigator.clipboard.readText());
+    assert.ok(copied.includes('B 隐约像名字')&&copied.includes('04 海岸木音'),copied);
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await page.locator('[data-voice="motif"][data-event="greet"]').click();
+    await page.waitForFunction(()=>document.querySelector('.portrait').classList.contains('speaking'));
+    assert.equal(await page.locator('.portrait img').evaluate(el=>getComputedStyle(el).animationName),'none');
+    await page.locator('#stop').click();
+    for(const [name,viewport] of [['desktop',{width:1280,height:900}],['tablet',{width:768,height:1024}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]){
+      await page.setViewportSize(viewport);await page.evaluate(()=>window.scrollTo(0,0));
+      await noOverflow(page,'name-voice '+name);
+      const clipped=await page.locator('main button:visible').evaluateAll(buttons=>buttons.filter(el=>{const box=el.getBoundingClientRect();return box.left<0||box.right>innerWidth+1;}).map(el=>el.textContent));
+      assert.deepEqual(clipped,[],name+': buttons must fit horizontally');
+      await capture(page,'name-voice-'+name);
+    }
+    note('Name voice round 2: 3 articulation choices × 5 calls, 3 four-event sequences, A/B/C comparison and 7 shortlisted timbres (26 WAVs) decode with signal and quiet endings; playback/switching/queued Stop, texture auditions, independent persisted shortlist, copied selections, approved art reference, reduced motion and four widths passed. Name intelligibility and emotional quality require human listening.');
+    await context.close();
+  }
   assert.deepEqual(errors, [], 'Browser runtime errors');
   note('No browser runtime errors observed.');
 } catch (error) {
