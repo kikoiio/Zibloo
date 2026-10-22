@@ -1,0 +1,10 @@
+{
+  "B2": {
+    "file": "reference-B2.png",
+    "sha256": "55603e1374c8fc6659839786905dec66c5a45090c740865a652b245097569ca4"
+  },
+  "C3": {
+    "file": "reference-C3.png",
+    "sha256": "1b624e91263a9b26b993a448ea95f6fcf477662b044e9bf9b57645c80b509453"
+  }
+}

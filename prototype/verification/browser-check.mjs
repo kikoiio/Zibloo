@@ -4,6 +4,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../scratch/p0-v2');
@@ -53,6 +54,12 @@ async function clearCaption(page, label) {
 }
 
 try {
+  const approved=JSON.parse(await readFile(resolve(root,'assets/approved-art.json'),'utf8'));
+  for(const [name,asset] of Object.entries(approved)) {
+    const hash=createHash('sha256').update(await readFile(resolve(root,'assets',asset.file))).digest('hex');
+    assert.equal(hash,asset.sha256,`${name}: approved artwork source changed`);
+  }
+  note('Saved B2/C3 original file hashes match the approved artwork manifest.');
   browser = await chromium.launch({ headless: true, args: ['--disable-gpu'] });
   for (const [name, viewport] of [['desktop',{width:1280,height:900}],['tablet',{width:768,height:1024}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]) {
     const { context, page } = await open(viewport, { touch: viewport.width < 600 });
@@ -78,6 +85,8 @@ try {
     assert.equal(await art.locator('image').getAttribute('href'),'assets/reference-B2.png');
     assert.equal(await art.locator('path').count(),0,'Character must display the approved original, not a redraw');
     assert.ok(await page.locator('[data-source="approved-C3"]').count()>0);
+    assert.equal(await page.locator('[data-source="approved-C3"]').first().getAttribute('viewBox'),'180 70 1400 470');
+    assert.equal(await page.locator('[data-source="approved-C3"]').first().locator('image').getAttribute('href'),'assets/reference-C3.png');
     const transform=()=>art.evaluate(node=>getComputedStyle(node).transform);
     const first = await transform();
     await page.waitForTimeout(550);

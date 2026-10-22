@@ -1,10 +1,14 @@
 (() => {
   let serial = 0;
   const safe = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const svg = ({label='Zibloo',symbol=false}={}) => `<svg xmlns="http://www.w3.org/2000/svg" class="zibloo-art" viewBox="${symbol?'20 115 420 390':'470 25 800 735'}" role="img" aria-label="${safe(label)}" data-source="approved-B2"><image class="approved-source" href="assets/reference-B2.png" x="0" y="0" width="2025" height="776"/></svg>`;
+  const paperMask = id => `<filter id="${id}" color-interpolation-filters="sRGB"><feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 -1 0 0 1" result="paper"/><feComponentTransfer in="paper" result="ink"><feFuncA type="discrete" tableValues="0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"/></feComponentTransfer><feComposite in="SourceGraphic" in2="ink" operator="in"/></filter>`;
+  function svg({label='Zibloo',symbol=false}={}) {
+    const id=`approved-art-${++serial}`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="zibloo-art" viewBox="${symbol?'20 115 420 390':'470 25 800 735'}" role="img" aria-label="${safe(label)}" data-source="approved-B2"><defs>${paperMask(id)}</defs><image class="approved-source" filter="url(#${id})" href="assets/reference-B2.png" x="0" y="0" width="2025" height="776"/></svg>`;
+  }
   function logo(className='brand-image') {
     const id=`approved-lockup-${++serial}`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" class="${className}" viewBox="180 70 1400 470" role="img" aria-label="zibloo" data-source="approved-C3"><defs><clipPath id="${id}"><path d="M180 70H1580V415H710V540H180Z"/></clipPath></defs><image class="approved-source" clip-path="url(#${id})" href="assets/reference-C3.png" x="0" y="0" width="1774" height="887"/></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="${className}" viewBox="180 70 1400 470" role="img" aria-label="zibloo" data-source="approved-C3"><defs>${paperMask(id+'-ink')}<clipPath id="${id}"><path d="M180 70H1580V415H710V540H180Z"/></clipPath></defs><image class="approved-source" filter="url(#${id}-ink)" clip-path="url(#${id})" href="assets/reference-C3.png" x="0" y="0" width="1774" height="887"/></svg>`;
   }
   const media = typeof matchMedia==='function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   let greetingTimer;
