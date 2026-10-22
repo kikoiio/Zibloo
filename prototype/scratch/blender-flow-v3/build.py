@@ -3,6 +3,7 @@
 Run with Blender 4.5 LTS on the authorized cloud runner, not the desktop GPU.
 """
 import argparse
+from collections import Counter
 import importlib.util
 import json
 import math
@@ -113,6 +114,9 @@ def build_skin():
     bpy.ops.object.quadriflow_remesh(target_faces=4800, seed=17)
     quad_count = sum(len(p.vertices)==4 for p in body.data.polygons)
     assert quad_count/max(len(body.data.polygons),1) > .95, "QuadriFlow did not produce a quad cage"
+    edges = Counter(tuple(sorted((a,b))) for p in body.data.polygons
+                    for a,b in zip(p.vertices,list(p.vertices)[1:]+[p.vertices[0]]))
+    assert all(count==2 for count in edges.values()), "Open or non-manifold quad cage"
     cage_faces = len(body.data.polygons)
     # Store smooth color on the cage; subdivision interpolates it continuously.
     tree = KDTree(len(samples))
@@ -142,6 +146,7 @@ def build_skin():
     for p in body.data.polygons:
         p.use_smooth = True
     body["quad_cage_faces"] = cage_faces
+    body["non_manifold_edges"] = sum(count!=2 for count in edges.values())
     return body, source, samples
 
 
@@ -232,31 +237,29 @@ def attach(obj, rig, bone):
 
 def pose_points(arm_index, clip, phase):
     points = [Vector(p) for p in ARMS[arm_index][1]]
+    if clip == "Focus" and arm_index == 1:
+        points = [Vector(p) for p in [(-.16,-.22,.20),(-.55,-.50,-.45),(-.65,-.62,-.95),
+                  (-.25,-.70,-1.15),(.35,-.72,-.95),(.72,-.68,-.35),(.83,-.62,.15)]]
+    elif clip == "Focus" and arm_index == 2:
+        points = [Vector(p) for p in [(.27,-.15,.25),(.73,-.48,-.28),(1.38,-.62,-.42),
+                  (1.60,-.64,-.03),(1.38,-.62,.27)]]
     wave = math.sin(phase*2*math.pi)
     envelope = math.sin(phase*math.pi)**2
     for j, p in enumerate(points):
         t = j/(len(points)-1)
         influence = t*t*(3-2*t)
-        p.y += .045*influence*math.sin(phase*2*math.pi+arm_index*.55)
-        p.z += .035*influence*wave
+        p.y += (.016 if clip=="Focus" else .045)*influence*math.sin(phase*2*math.pi+arm_index*.55)
+        p.z += (.012 if clip=="Focus" else .035)*influence*wave
         if clip == "Greeting" and arm_index == 0:
             p.z += 1.05*influence*envelope
             p.x += .22*influence*envelope*math.sin(phase*6*math.pi)
             p.y -= .18*influence*envelope
         elif clip == "Focus":
             # Front left and front right gather around a low central orb.
-            if arm_index == 1:
-                p.x += 1.85*influence
-                p.z += 2.00*influence
-                p.y -= .12*influence
-            if arm_index == 2:
-                p.x -= 1.05*influence
-                p.z -= .35*influence
-                p.y -= .20*influence
             if arm_index == 3:
                 p.x -= .45*influence
                 p.z -= .35*influence
-            p.z += .018*influence*wave
+            p.z += .008*influence*wave
         elif clip == "Celebrate":
             p.x *= 1+.10*envelope*t
             p.z += .45*influence*envelope
@@ -276,7 +279,7 @@ def animate(rig, chains):
             frame_number = 1+length*phase
             wave = math.sin(phase*2*math.pi)
             envelope = math.sin(phase*math.pi)**2
-            lift = .055*wave if clip!="Celebrate" else .35*envelope
+            lift = (.022 if clip=="Focus" else .055)*wave if clip!="Celebrate" else .35*envelope
             turn = .025*wave if clip!="Celebrate" else .12*wave
             root_matrix = Matrix.Translation((0,0,lift)) @ Matrix.Rotation(turn,4,"Z")
             rig.pose.bones["Root"].matrix = root_matrix @ rig.data.bones["Root"].matrix_local
@@ -287,7 +290,11 @@ def animate(rig, chains):
                 line = pose_points(arm_index,clip,phase)
                 for i,(name,a,b) in enumerate(chain):
                     ratio = (line[i+1]-line[i]).length/(b-a).length
-                    rig.pose.bones[name].matrix = root_matrix @ frame(line[i],line[i+1]) @ Matrix.Diagonal((1,ratio,1,1))
+                    # Rotate from the rest direction with the smallest twist;
+                    # a fixed world-up frame can roll abruptly near vertical.
+                    bend = (b-a).rotation_difference(line[i+1]-line[i]).to_matrix()
+                    orientation = (bend @ rig.data.bones[name].matrix_local.to_3x3()).to_4x4()
+                    rig.pose.bones[name].matrix = root_matrix @ Matrix.Translation(line[i]) @ orientation @ Matrix.Diagonal((1,ratio,1,1))
             orb = rig.pose.bones["Orb"]
             orb_center = Vector((1.10,-.62,.48+.025*wave))
             orb.matrix = root_matrix @ Matrix.Translation(orb_center) @ Matrix.Diagonal((1,1,1,1) if clip=="Focus" else (.001,.001,.001,1))
@@ -353,6 +360,7 @@ def main():
     scene["prototype_note"]="Automatic quad cage and baked segment rig; manual production retopology remains"
     select_action(rig,actions["Idle"],1)
     scene.frame_start,scene.frame_end=1,97
+    scene.render.filepath="//idle.png"
     bpy.ops.wm.save_as_mainfile(filepath=str(output/"zibloo_flow_v3.blend"))
     bpy.ops.object.select_all(action="DESELECT")
     rig.select_set(True)
@@ -368,6 +376,7 @@ def main():
         selected_frame=1+round(length*(.42 if clip=="Greeting" else .5))
         select_action(rig,actions[clip],selected_frame)
         evaluated=body.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        assert all(math.isfinite(c) for vertex in evaluated.vertices for c in vertex.co), "Non-finite skin vertex"
         bounds=[(min(v.co[i] for v in evaluated.vertices),max(v.co[i] for v in evaluated.vertices)) for i in range(3)]
         assert all(math.isfinite(x) for axis in bounds for x in axis),"Invalid deformed vertices"
         assert max(b-a for a,b in bounds)<9,"Exploding skin"
@@ -392,6 +401,7 @@ def main():
             bpy.ops.render.render(write_still=True)
     report={"blender":bpy.app.version_string,"quad_cage_faces":body["quad_cage_faces"],
         "quad_cage_vertices":len(body.data.vertices),"bones":len(rig.data.bones),
+        "non_manifold_edges":body["non_manifold_edges"],
         "clips":CLIPS,"weight_normalization_error":weight_error,"evaluated":evaluated_stats,
         "glb_bytes":(output/"zibloo_flow_v3.glb").stat().st_size,
         "rig_method":"independent deform segments driven by sampled 3D paths; baked transforms",

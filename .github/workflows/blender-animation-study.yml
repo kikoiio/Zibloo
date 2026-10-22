@@ -46,10 +46,13 @@ jobs:
           npm install --ignore-scripts --no-audit --no-fund
           npx esbuild viewer.js --bundle --format=esm --minify --outfile=output/viewer.js
       - name: Review the exported GLB in one cloud browser
+        timeout-minutes: 6
         working-directory: prototype/scratch/blender-flow-v3
         run: |
-          npx playwright install --with-deps chromium
-          node browser-check.mjs
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            timeout --kill-after=10s 150s npx playwright install chromium --only-shell
+          fi
+          timeout --kill-after=10s 180s node browser-check.mjs
       - name: Preserve model, animations, screenshots and reports
         if: always()
         uses: actions/upload-artifact@v7

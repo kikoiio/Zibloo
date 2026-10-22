@@ -22,15 +22,18 @@ camera.position.set(2.6,1.8,12.2);
 const controls = new OrbitControls(camera,canvas);
 controls.target.set(0,.2,0); controls.enablePan=false;controls.enableZoom=false;
 controls.minPolarAngle=.5;controls.maxPolarAngle=2.4;controls.update();
-let mixer, active, clips, model, current='Idle';
+let mixer, active, clips, model, current='Idle', dirty=true;
+controls.addEventListener('change',()=>{dirty=true;});
 const clock = new THREE.Clock();
 const select = (name,fade=.25) => {
   const clip = clips.find(c=>c.name===name); if (!clip) throw Error(`Missing animation: ${name}`);
+  if (!motion.checked) { mixer.stopAllAction(); fade=0; }
   const next = mixer.clipAction(clip); if(active) active.fadeOut(fade);
   next.reset().setEffectiveWeight(1).setEffectiveTimeScale(1).fadeIn(fade).play();
   active=next;current=name;
   if(!motion.checked){mixer.update(.01);active.time=clip.duration*.42;mixer.update(0);}
   document.querySelectorAll('[data-clip]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.clip===name)));
+  dirty=true;
 };
 new GLTFLoader().load('zibloo_flow_v3.glb',gltf=>{
   model=gltf.scene;clips=gltf.animations;scene.add(model);mixer=new THREE.AnimationMixer(model);
@@ -38,8 +41,8 @@ new GLTFLoader().load('zibloo_flow_v3.glb',gltf=>{
   window.modelStudy={model,mixer,clips,select,renderer,get current(){return current;}};
 },undefined,error=>{status.textContent='角色加载失败，请刷新重试';console.error(error);});
 document.querySelectorAll('[data-clip]').forEach(button=>button.addEventListener('click',()=>{if(mixer)select(button.dataset.clip);}));
-motion.addEventListener('change',()=>{if(mixer&&!motion.checked){active.time=active.getClip().duration*.42;mixer.update(0);}});
+motion.addEventListener('change',()=>{if(mixer&&!motion.checked){active.time=active.getClip().duration*.42;mixer.update(0);}dirty=true;});
 reduced.addEventListener('change',()=>{motion.checked=!reduced.matches;motion.dispatchEvent(new Event('change'));});
-new ResizeObserver(()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}).observe(stage);
-function frame(){requestAnimationFrame(frame);const delta=Math.min(.05,clock.getDelta());if(document.hidden)return;if(mixer&&motion.checked)mixer.update(delta);controls.update();renderer.render(scene,camera);}
+new ResizeObserver(()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();dirty=true;}).observe(stage);
+function frame(){requestAnimationFrame(frame);const delta=Math.min(.05,clock.getDelta());if(document.hidden)return;if(mixer&&motion.checked){mixer.update(delta);dirty=true;}controls.update();if(dirty){renderer.render(scene,camera);dirty=false;}}
 frame();
