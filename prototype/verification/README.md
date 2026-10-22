@@ -25,3 +25,9 @@ Artifacts：截图与 `observations.json`，保留 7 天。[本次运行已通�
 第二轮叫名试听[最终云端检查通过](https://github.com/kikoiio/Zibloo/actions/runs/39751960844)，提交 `460780496667a3c36ef995e7cd89f2a7250c212e`；[截图与检查记录](../review/name-voice-round2-2026-10-22/README.md)。
 
 第三轮[临时声音与计时接入检查通过](https://github.com/kikoiio/Zibloo/actions/runs/39756434941)，提交 `0e7b0d513e220207b9136588b4f611d185f29842`；[截图与记录](../review/temporary-voices-2026-10-22/README.md)。
+
+## E/G 已选预设
+
+用户选定 E/G 后，验证改用音频 Buffer 实际播放检查，保留静音/计时流程回归。十个文件与原件 SHA256 一致，十个场景试听映射正确，默认 E、G 保留、旧偏好迁移、角色/提醒预览、无旧振荡器播放及中英三种设置宽度通过。
+
+[运行通过](https://github.com/kikoiio/Zibloo/actions/runs/39757963993)，提交 `251ae33b2655340f7ba58ae994bfc8ef41881339`；[截图与记录](../review/selected-voices-2026-10-22/README.md)。
