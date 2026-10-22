@@ -5,7 +5,8 @@ import urllib.parse
 import urllib.request
 
 root=Path(__file__).resolve().parent
-text=''.join(sorted(set(re.findall('[\u4e00-\u9fff]',(root/'index.html').read_text()))))
+content=''.join((root/name).read_text() for name in ['index.html','viewer.js'])
+text=''.join(sorted(set(character for character in content if not character.isspace())))
 url='https://fonts.googleapis.com/css2?'+urllib.parse.urlencode({'family':'Noto Sans SC:wght@400','text':text,'display':'swap'})
 try:
     request=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 Chrome/130.0.0.0 Safari/537.36'})

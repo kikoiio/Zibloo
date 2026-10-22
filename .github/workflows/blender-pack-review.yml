@@ -1,0 +1,56 @@
+name: Package and review animated mascot
+on:
+  push:
+    branches: [codex/blender-flow-v2]
+    paths:
+      - '.github/workflows/blender-pack-review.yml'
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Completed Blender render run
+        required: true
+        default: '39808231587'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TMPDIR: ${{ github.workspace }}/.tmp
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: ${{ inputs.source_run || '39808231587' }}
+    defaults:
+      run:
+        working-directory: prototype/scratch/blender-flow-v3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Reuse completed cloud renders and model
+        run: |
+          mkdir -p "$TMPDIR"
+          gh run download "$SOURCE_RUN" -R kikoiio/Zibloo -n blender-flow-v3 -D output
+      - name: Compress mesh and animation buffers
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          node optimize.mjs
+          python3 prepare_font.py
+          cp index.html output/index.html
+          npx esbuild viewer.js --bundle --format=esm --minify --outfile=output/viewer.js
+      - name: Verify optimized animation playback in one browser
+        timeout-minutes: 6
+        run: |
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            timeout --kill-after=10s 150s npx playwright install chromium --only-shell
+          fi
+          timeout --kill-after=10s 180s node browser-check.mjs
+      - name: Preserve compact model and review assets
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: blender-flow-v3-final
+          path: prototype/scratch/blender-flow-v3/output/
+          retention-days: 7

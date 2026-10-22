@@ -14,6 +14,7 @@ try {
   console.log('Loading standalone review page');
   await page.goto('http://127.0.0.1:4326/');
   await page.waitForFunction(()=>window.modelStudy?.clips.length===4,undefined,{timeout:60000});
+  await page.evaluate(()=>document.fonts.ready);
   await page.locator('#motion').uncheck();
   console.log('Checking exported skins and animation loops');
   const observations=await page.evaluate(()=>{
@@ -64,6 +65,26 @@ try {
   }
   await page.setViewportSize({width:390,height:844});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  observations.mobile_frame_bounds={};
+  for(const name of ['Idle','Greeting','Focus','Celebrate']){
+    await page.locator(`[data-clip="${name}"]`).click();
+    await page.waitForTimeout(120);
+    const extent=await page.evaluate(()=>{
+      const {model}=window.modelStudy;
+      model.updateMatrixWorld(true);
+      let body;model.traverse(obj=>{if(obj.isSkinnedMesh&&obj.geometry.attributes.position.count>5000)body=obj;});
+      body.skeleton.update();let x=0,y=0;
+      const camera=window.modelStudy.camera;
+      for(let i=0;i<body.geometry.attributes.position.count;i+=17){
+        const p=body.position.clone().fromBufferAttribute(body.geometry.attributes.position,i);
+        body.applyBoneTransform(i,p);p.applyMatrix4(body.matrixWorld).project(camera);
+        x=Math.max(x,Math.abs(p.x));y=Math.max(y,Math.abs(p.y));
+      }
+      return {x,y};
+    });
+    assert(extent.x<.96&&extent.y<.96,`Mobile ${name} cropped: ${JSON.stringify(extent)}`);
+    observations.mobile_frame_bounds[name]=extent;
+  }
   await page.screenshot({path:'output/browser-mobile.png',fullPage:true,timeout:15000});
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.waitForFunction(()=>document.querySelector('#motion').checked);

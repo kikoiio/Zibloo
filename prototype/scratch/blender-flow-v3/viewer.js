@@ -39,11 +39,17 @@ const select = (name,fade=.25) => {
 new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('zibloo_flow_v3.glb',gltf=>{
   model=gltf.scene;clips=gltf.animations;scene.add(model);mixer=new THREE.AnimationMixer(model);
   select('Idle',0);status.textContent='拖动旋转 · 点击下方切换动作';
-  window.modelStudy={model,mixer,clips,select,renderer,get current(){return current;}};
+  window.modelStudy={model,mixer,clips,select,renderer,camera,get current(){return current;}};
 },undefined,error=>{status.textContent='角色加载失败，请刷新重试';console.error(error);});
 document.querySelectorAll('[data-clip]').forEach(button=>button.addEventListener('click',()=>{if(mixer)select(button.dataset.clip);}));
 motion.addEventListener('change',()=>{if(mixer&&!motion.checked){active.time=active.getClip().duration*.42;mixer.update(0);}dirty=true;});
 reduced.addEventListener('change',()=>{motion.checked=!reduced.matches;motion.dispatchEvent(new Event('change'));});
-new ResizeObserver(()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();dirty=true;}).observe(stage);
+new ResizeObserver(()=>{
+  const w=stage.clientWidth,h=stage.clientHeight;
+  renderer.setSize(w,h,false);camera.aspect=w/h;
+  const offset=camera.position.clone().sub(controls.target).normalize();
+  camera.position.copy(controls.target).addScaledVector(offset,12.6/Math.min(1,camera.aspect));
+  camera.updateProjectionMatrix();controls.update();dirty=true;
+}).observe(stage);
 function frame(){requestAnimationFrame(frame);const delta=Math.min(.05,clock.getDelta());if(document.hidden)return;if(mixer&&motion.checked){mixer.update(delta);dirty=true;}controls.update();if(dirty){renderer.render(scene,camera);dirty=false;}}
 frame();
