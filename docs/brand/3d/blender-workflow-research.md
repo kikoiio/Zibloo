@@ -42,3 +42,5 @@
 [blender-flow-v2](../../../prototype/scratch/blender-flow-v2/README.md) 是独立造型研究，不覆盖原始 `.blend`、PNG、GLB，也不代表用户批准了新的角色形象。
 
 已准备生成脚本、几何检查与独立分支上的 GitHub Actions 工作流，用户已明确授权云端渲染；实际结果与验证状态见研究目录 README。
+
+修正版[云端运行通过](https://github.com/kikoiio/Zibloo/actions/runs/39794015539)：19,232 三角面、429 KiB 未压缩 GLB、四张评审渲染。实际 GLB 包含双色顶点数据，并对头部误色修正做了独立检查。该网格仍是静态造型研究，色带边缘、根部分叉和侧面空间层次需要后续精修，尚未开始正式绑定。
