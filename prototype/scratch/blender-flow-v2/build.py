@@ -119,19 +119,22 @@ def character():
     attribute=obj.data.color_attributes.new(name="BellyColor",type="FLOAT_COLOR",domain="POINT")
     for vertex in obj.data.vertices:
         co=tuple(vertex.co)
-        _,index,_=tree.find(co)
+        _,index,distance=tree.find(co)
         center,radius,(side,belly)=samples[index]
         # Place the stripe on the turning edge of the flattened arm, leaving
         # the broad camera-facing surface predominantly teal.
         offset=sub(co,center)
         outward=.94*dot(offset,side)/max(radius,.01)+.34*dot(offset,belly)/max(radius*.72,.01)
         # Reveal mint along the local belly; taper it out inside the neck.
-        amount=max(0.,min(1.,(outward-.42)/.22))
+        amount=max(0.,min(1.,(outward-.28)/.48))
         amount=amount*amount*(3-2*amount)
         root_fade=max(0.,min(1.,max((.15-co[2])/.35,(math.hypot(center[0],center[1])-.40)/.50)))
-        amount*=root_fade
+        # Nearest centerline alone is not enough: the mantle also has a nearest
+        # arm. Restrict paint to a narrow neighborhood of the actual sweep.
+        surface_gate=max(0.,min(1.,(1.45-distance/radius)/.35))
+        amount*=root_fade*surface_gate
         attribute.data[vertex.index].color=tuple(a*(1-amount)+b*amount for a,b in zip(TEAL,MINT))+(1.,)
-    mat=base.mat_principled("Teal_Mint_Vertex_PBR",(1,1,1),roughness=.44,sss=.09,sheen=.08)
+    mat=base.mat_principled("Teal_Mint_Vertex_PBR",(1,1,1),roughness=.48,sss=.09,sheen=.08)
     node=mat.node_tree.nodes.new("ShaderNodeVertexColor")
     node.layer_name="BellyColor"
     bsdf=next(n for n in mat.node_tree.nodes if n.type=="BSDF_PRINCIPLED")
