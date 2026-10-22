@@ -31,3 +31,9 @@
 计时 Start/继续点击时启用浏览器音频；播放前等待恢复。训练关闭阶段引导不再屏蔽完成提示与其他活动，全局静音仍有效。原有临时完成提示稍延长、增强，待选定品牌声音后替换。
 
 本次[声音验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/39748474988)，提交 `1788fd517b6ab3263eef7f280689fb85c8559e1e`；[截图和检查记录](../../review/sound-exploration-2026-10-22/README.md)。
+
+## 第二轮声音选择
+
+当前声音入口指向[Zi—bloo 三种叫法](sound-lab/voice-round2/index.html)，比较名字的清晰程度与角色感，并保留第一轮已选 02–08 质感作为 B 叫法的搭配试听。新增声音仍为独立草稿，不改变计时器当前临时提示音。
+
+第二轮叫名试听[最终云端检查通过](https://github.com/kikoiio/Zibloo/actions/runs/39751960844)，提交 `460780496667a3c36ef995e7cd89f2a7250c212e`；[截图与检查记录](../../review/name-voice-round2-2026-10-22/README.md)。

@@ -1,0 +1,18 @@
+{
+  "observations": [
+    "Saved B2/C3 original file hashes match the approved artwork manifest.",
+    "desktop: home fits width; three distinct mode targets visible",
+    "tablet: home fits width; three distinct mode targets visible",
+    "phone: home fits width; three distinct mode targets visible",
+    "small-phone: home fits width; three distinct mode targets visible",
+    "Approved B2 source displayed without redraw; C3 original logo displayed; gentle drift stops during focus/reduced motion; keyboard greeting works. Independent arm animation is deferred.",
+    "Touch flow: greeting, quick timer, pause/resume, completion/history, training phase change, skip, early end",
+    "Focus flow: escaped custom tag, two focus rounds, short break, long break, complete (browser clock advanced)",
+    "Reminders: weekly form survives redraw, create/edit/disable/delete/preview; English and app reduced motion work",
+    "Audio: quick Start unlocks audio; completion outputs signal (peak 0.1579); focus work/rest survives training guide off; guide off still permits training completion; global mute works.",
+    "Sound lab: 8 styles × 4 events plus 8 sequences decode with nonzero unclipped signal; playback, switching, comparison queue, Stop, persisted shortlist and three responsive widths passed. Timbre/emotion still need human listening.",
+    "Name voice round 2: 3 articulation choices × 5 calls, 3 four-event sequences, A/B/C comparison and 7 shortlisted timbres (26 WAVs) decode with signal and quiet endings; playback/switching/queued Stop, texture auditions, independent persisted shortlist, copied selections, approved art reference, reduced motion and four widths passed. Name intelligibility and emotional quality require human listening.",
+    "No browser runtime errors observed."
+  ],
+  "errors": []
+}

@@ -21,3 +21,5 @@ Artifacts：截图与 `observations.json`，保留 7 天。[本次运行已通�
 独立试听页检查 40 个 WAV 解码、样本峰值与非静音信号、单段播放/切换/串联队列/停止、候选刷新后保存、1280/390/320 宽度。实际音色、情绪和提醒效果仍由人试听；云端波形不能替代手机扬声器、环境噪声与锁屏验收。
 
 本次[声音验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/39748474988)，提交 `1788fd517b6ab3263eef7f280689fb85c8559e1e`；[截图和检查记录](../review/sound-exploration-2026-10-22/README.md)。
+
+第二轮叫名试听[最终云端检查通过](https://github.com/kikoiio/Zibloo/actions/runs/39751960844)，提交 `460780496667a3c36ef995e7cd89f2a7250c212e`；[截图与检查记录](../review/name-voice-round2-2026-10-22/README.md)。
