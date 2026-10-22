@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 const canvas = document.querySelector('canvas');
 const stage = canvas.parentElement;
@@ -35,7 +36,7 @@ const select = (name,fade=.25) => {
   document.querySelectorAll('[data-clip]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.clip===name)));
   dirty=true;
 };
-new GLTFLoader().load('zibloo_flow_v3.glb',gltf=>{
+new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('zibloo_flow_v3.glb',gltf=>{
   model=gltf.scene;clips=gltf.animations;scene.add(model);mixer=new THREE.AnimationMixer(model);
   select('Idle',0);status.textContent='拖动旋转 · 点击下方切换动作';
   window.modelStudy={model,mixer,clips,select,renderer,get current(){return current;}};

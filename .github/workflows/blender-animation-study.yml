@@ -3,7 +3,8 @@ on:
   push:
     branches: [codex/blender-flow-v2]
     paths:
-      - 'prototype/scratch/blender-flow-v3/**'
+      - 'prototype/scratch/blender-flow-v3/build.py'
+      - 'prototype/scratch/blender-flow-v3/package_output.py'
       - '.github/workflows/blender-animation-study.yml'
   workflow_dispatch:
 permissions:
