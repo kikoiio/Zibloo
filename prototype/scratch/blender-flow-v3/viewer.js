@@ -13,11 +13,11 @@ const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,power
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.25;
+renderer.toneMappingExposure = 1.1;
 const scene = new THREE.Scene();
-scene.add(new THREE.HemisphereLight(0xfffcf0,0x6b9690,3));
-const key = new THREE.DirectionalLight(0xfff3db,3.5); key.position.set(-3,5,5); scene.add(key);
-const fill = new THREE.DirectionalLight(0xc3e9e8,1.4); fill.position.set(4,2,-3); scene.add(fill);
+scene.add(new THREE.HemisphereLight(0xfffcf0,0x6b9690,2.2));
+const key = new THREE.DirectionalLight(0xfff3db,1.8); key.position.set(-3,5,5); scene.add(key);
+const fill = new THREE.DirectionalLight(0xc3e9e8,.8); fill.position.set(4,2,-3); scene.add(fill);
 const camera = new THREE.PerspectiveCamera(34,1,.1,50);
 camera.position.set(2.6,1.8,12.2);
 const controls = new OrbitControls(camera,canvas);

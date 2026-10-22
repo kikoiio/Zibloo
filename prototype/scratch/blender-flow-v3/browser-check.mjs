@@ -27,7 +27,7 @@ try {
       const result=[];
       for(let i=0;i<body.geometry.attributes.position.count;i+=53){
         const point=body.position.clone().fromBufferAttribute(body.geometry.attributes.position,i);
-        body.applyBoneTransform(i,point);result.push(point.toArray());
+        body.applyBoneTransform(i,point);point.applyMatrix4(body.matrixWorld);result.push(point.toArray());
       }
       return result;
     };
@@ -56,7 +56,7 @@ try {
       const {model}=window.modelStudy;model.updateMatrixWorld(true);
       let body;model.traverse(obj=>{if(obj.isSkinnedMesh&&obj.geometry.attributes.position.count>5000)body=obj;});
       body.skeleton.update();const actual=[];
-      for(let i=0;i<body.geometry.attributes.position.count;i+=53){const p=body.position.clone().fromBufferAttribute(body.geometry.attributes.position,i);body.applyBoneTransform(i,p);actual.push(p.toArray());}
+      for(let i=0;i<body.geometry.attributes.position.count;i+=53){const p=body.position.clone().fromBufferAttribute(body.geometry.attributes.position,i);body.applyBoneTransform(i,p);p.applyMatrix4(body.matrixWorld);actual.push(p.toArray());}
       return Math.max(...actual.map((p,i)=>Math.hypot(...p.map((n,j)=>n-window.expectedStudyPoses[name][i][j]))));
     },name);
     assert(error<.001,`Frozen ${name} pose differs from requested clip: ${error}`);
@@ -66,8 +66,10 @@ try {
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.screenshot({path:'output/browser-mobile.png',fullPage:true,timeout:15000});
   await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.waitForFunction(()=>document.querySelector('#motion').checked);
   assert.equal(await page.locator('#motion').isChecked(),true);
   await page.emulateMedia({reducedMotion:'reduce'});
+  await page.waitForFunction(()=>!document.querySelector('#motion').checked);
   assert.equal(await page.locator('#motion').isChecked(),false);
   assert.deepEqual(errors,[]);
   observations.browser_version=browser.version();

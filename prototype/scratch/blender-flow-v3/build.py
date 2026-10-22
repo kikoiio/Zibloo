@@ -184,36 +184,46 @@ def make_rig(body, samples):
     for bone in rig.pose.bones:
         bone.rotation_mode = "QUATERNION"
     groups = {bone.name:body.vertex_groups.new(name=bone.name) for bone in rig.data.bones}
-    points = []
+    segments = []
     for arm_index, chain in enumerate(chains):
         for segment, (name,a,b) in enumerate(chain):
-            for j in range(5):
-                points.append((a.lerp(b,j/4), arm_index, segment, j/4))
-    tree = KDTree(len(points))
-    for i, (p,*_) in enumerate(points): tree.insert(p,i)
-    tree.balance()
+            direction = b-a
+            segments.append((arm_index,segment,a,direction,direction.length_squared))
     max_error = 0.
     for vertex in body.data.vertices:
         co = vertex.co
-        _, index, distance = tree.find(co)
-        _, arm_index, segment, t = points[index]
+        nearest = None
+        for candidate_arm,candidate_segment,a,direction,length_squared in segments:
+            fraction = max(0.,min(1.,(co-a).dot(direction)/length_squared))
+            distance_squared = (co-a-direction*fraction).length_squared
+            if nearest is None or distance_squared < nearest[0]:
+                nearest = (distance_squared,candidate_arm,candidate_segment,fraction)
+        distance_squared,arm_index,segment,t = nearest
+        distance = math.sqrt(distance_squared)
         widths = ARMS[arm_index][2]
         radius = sum(widths)/len(widths)
         surface = max(0.,min(1.,(1.6-distance/radius)/.6))
         fade = max(0., min(1., max((.18-co.z)/.55,(math.hypot(co.x,co.y)-.38)/.65)))
         arm_weight = surface*fade
-        # Interpolate between segment centers to avoid rigid ring boundaries.
+        # Cubic weights vary continuously between segment centers; a nearest
+        # sampled point would create small plateaus and visible skin wrinkles.
         coordinate = segment+t-.5
-        lo = max(0,min(SEGMENTS-1,math.floor(coordinate)))
-        hi = max(0,min(SEGMENTS-1,math.floor(coordinate)+1))
+        lo = math.floor(coordinate)
         fraction = coordinate-math.floor(coordinate)
+        f = fraction
+        cubic = [((1-f)**3)/6,(3*f**3-6*f*f+4)/6,
+                 (-3*f**3+3*f*f+3*f+1)/6,f**3/6]
         weights = {}
-        for part, amount in [(lo,1-fraction),(hi,fraction)]:
+        for part, amount in zip(range(lo-1,lo+3),cubic):
+            part = max(0,min(SEGMENTS-1,part))
             name = chains[arm_index][part][0]
             weights[name] = weights.get(name,0)+arm_weight*amount
         head_weight = max(0.,min(1.,(co.z-.40)/.55))*(1-arm_weight)
         weights["Head"] = head_weight
         weights["Root"] = 1-arm_weight-head_weight
+        weights = dict(sorted(weights.items(),key=lambda item:item[1],reverse=True)[:4])
+        total = sum(weights.values())
+        weights = {name:weight/total for name,weight in weights.items()}
         for name,weight in weights.items():
             if weight>1e-7: groups[name].add([vertex.index],weight,"REPLACE")
         max_error=max(max_error,abs(sum(weights.values())-1))

@@ -45,6 +45,8 @@ jobs:
           "$TMPDIR/preview-python/bin/pip" install --disable-pip-version-check Pillow
           "$TMPDIR/preview-python/bin/python" package_output.py
           npm install --ignore-scripts --no-audit --no-fund
+          node optimize.mjs
+          python3 prepare_font.py
           npx esbuild viewer.js --bundle --format=esm --minify --outfile=output/viewer.js
       - name: Review the exported GLB in one cloud browser
         timeout-minutes: 6
