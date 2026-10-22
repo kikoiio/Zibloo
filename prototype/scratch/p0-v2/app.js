@@ -82,6 +82,11 @@ const copy = {
   '待机 · 浅水绿':'Idle · seafoam','训练 · 珊瑚橙':'Training · coral','专注 · 沙金色':'Focus · sand',
   '提醒 · 天蓝色':'Reminder · sky','庆祝 · 草绿色':'Celebrate · green','暂停 · 安静等你':'Paused · waiting for you',
   '已减少动态效果':'Reduced motion is on',
+  '阶段引导可关闭，完成提醒跟随设置中的提示音。':'Phase guidance can be turned off. Completion follows the timer sound setting.',
+  '当前为静音，请先在设置中开启提示音。':'Sound is muted. Choose a timer sound in Settings first.',
+  '声音未能启用，请点按声音试听后重试。':'Audio could not start. Tap the sound preview and try again.',
+  '探索 Zibloo 的声音':'Explore Zibloo’s voice',
+  '8 种音色，分别试听工作、休息与提醒':'8 voices for work, breaks, and reminders',
 };
 const state = {
   locale: 'zh-CN', page: 'home', speed: 1, guidance: 'cues', characterPreview: 'auto',
@@ -184,7 +189,7 @@ function trainingPage() {
   return `${backHeader('训练')}<div class="mode-heading"><div><h2>${t('动起来，我陪你。')}</h2><p class="subtitle">${roundText(1,p.rounds)}</p></div>${image()}</div>
     <div class="field-heading">${t('选一个节奏')}</div><div class="preset-grid">${templates.map(([name,w,r,n],i)=>btn(`preset-${i}`,`<strong>${t(name)}</strong><span>${w} / ${r} ${unit('秒')} × ${n}</span>`,`preset ${p.preset===i?'selected':''}`,`aria-pressed="${p.preset===i}"`)).join('')}</div>
     <section class="panel">${stepper('work','运动时间','每一组的运动时长',p.work,'秒')}${stepper('rest','休息时间','两组之间喘口气',p.rest,'秒')}${stepper('rounds','循环组数','按自己的节奏来',p.rounds,'组')}</section>
-    <div class="field-heading">${t('声音引导')}</div><div class="segmented">${[['voice','语音播报'],['cues','仅叫声'],['off','关闭']].map(([value,label])=>btn(`guidance-${value}`,t(label),state.guidance===value?'selected':'',`aria-pressed="${state.guidance===value}"`)).join('')}</div>
+    <div class="field-heading">${t('声音引导')}</div><div class="segmented">${[['voice','语音播报'],['cues','仅叫声'],['off','关闭']].map(([value,label])=>btn(`guidance-${value}`,t(label),state.guidance===value?'selected':'',`aria-pressed="${state.guidance===value}"`)).join('')}</div><p class="demo-note">${t('阶段引导可关闭，完成提醒跟随设置中的提示音。')}</p>
     <div class="start-footer"><p>${t('预计')} ${durationText(p.work*p.rounds+p.rest*(p.rounds-1))}</p>${btn('start-training',`${icon('play')}${t('开始训练')}`,'primary')}<p class="demo-note">${t('不包含最后一组后的休息')}</p></div>`;
 }
 function focusPage() {
@@ -213,6 +218,8 @@ function remindersPage() {
     <p class="info-note">${icon('info')}<span>${t('原型仅演示交互，不会设置系统闹钟。')}</span></p>${btn('preview-reminder',t('体验 Zibloo 来提醒你'),'text-button')}`;
 }
 function buildSession(kind, minutes=1) {
+  // Unlock on the actual Start click, including quick/focus timers without an opening cue.
+  void ensureAudio().catch(audioProblem);
   const segments=[];
   if(kind==='training') {
     const p=state.training;
@@ -263,7 +270,7 @@ function updateTimer() {
   const s=state.session;if(!s) return;
   const p=projection();if(!p)return finishSession(true);
   if(p.index!==s.index) {
-    s.index=p.index;playCue(p.phase==='work'?(s.kind==='training'?'rise2':null):'fall2');
+    s.index=p.index;playCue(p.phase==='work'?'rise2':'fall2');
     if(state.page==='timer') render(false);
     return;
   }
@@ -279,7 +286,7 @@ function finishSession(complete) {
   const s=state.session;if(!s)return;
   const seconds=Math.max(0,Math.min(s.total,elapsed())-s.skipped);addHistory(complete,seconds);
   state.session=null;state.page='home';render();
-  if(complete){playCue('cheer3');openDialog(`<div class="completion">${image('','Zibloo','celebrate')}<h2>${t('完成啦，做得好！')}</h2><p>${t('这一点坚持，Zibloo 都记得。')}</p><div class="completion-stat">${durationText(seconds)}</div>${btn('completion-home',t('返回小窝'),'primary')}${btn('completion-history',t('查看足迹'),'text-button')}</div>`);}
+  if(complete){playCue('cheer3',false,s.kind);openDialog(`<div class="completion">${image('','Zibloo','celebrate')}<h2>${t('完成啦，做得好！')}</h2><p>${t('这一点坚持，Zibloo 都记得。')}</p><div class="completion-stat">${durationText(seconds)}</div>${btn('completion-home',t('返回小窝'),'primary')}${btn('completion-history',t('查看足迹'),'text-button')}</div>`);}
 }
 function endDialog() {
   openDialog(`<div class="dialog-header"><h2>${t('结束这次计时？')}</h2>${btn('close-dialog',icon('close'),'close-button',`aria-label="${t('取消')}"`)}</div><p class="subtitle">${t('这次已经度过的时间会保留在本次演示的历史中。')}</p><div class="dialog-choices">${btn('close-dialog',t('继续计时'),'secondary')}${btn('confirm-end',t('结束计时'),'primary')}</div>`);
@@ -297,7 +304,7 @@ function settingsPage() {
     <label class="setting-row"><span>${t('提示音')}</span><select id="sound">${[['zibloo','Zibloo 叫声'],['chime','清脆'],['silent','静音']].map(([v,l])=>`<option value="${v}" ${p.sound===v?'selected':''}>${t(l)}</option>`).join('')}</select></label>
     <label class="setting-row"><span>${t('震动强度')}</span><select id="vibration">${[['light','轻'],['standard','标准'],['strong','强']].map(([v,l])=>`<option value="${v}" ${p.vibration===v?'selected':''}>${t(l)}</option>`).join('')}</select></label>
     <div class="setting-row"><span>${t('语音播报')}</span>${toggle('toggle-voice',p.voice,t('语音播报'))}</div><div class="setting-row"><span>${t('减少动态效果')}</span>${toggle('toggle-reduced',p.reduced,t('减少动态效果'))}</div>
-    <div class="setting-row">${btn('preview-sound',t('在原型中试听提示音'),'text-button')}</div></div></section>
+    <div class="setting-row">${btn('preview-sound',t('在原型中试听提示音'),'text-button')}</div><a class="setting-row" href="sound-lab/index.html"><span>${t('探索 Zibloo 的声音')}<small>${t('8 种音色，分别试听工作、休息与提醒')}</small></span>${icon('chevron')}</a></div></section>
     <section class="settings-section"><h2>${t('数据与关于')}</h2><div class="settings-group"><div class="setting-row"><span>${t('导出记录')}<small>${t('导出本次原型中的示例与体验记录')}</small></span>${btn('export',icon('export'),'setting-value',`aria-label="${t('导出记录')}"`)}</div><div class="setting-row"><span>${t('版本')}</span><span class="setting-value">${t('P0 交互原型')}</span></div></div></section>
     <p class="info-note">${icon('info')}<span>${t('网页演示，不承诺后台提醒。安卓可靠性需后续真机验收。')}</span></p><div class="brand-footer">${Zibloo.logo()}</div>`;
 }
@@ -346,15 +353,31 @@ function toast(text) {
   const el=$('.toast');clearTimeout(toastHandle);el.textContent=text;el.hidden=false;
   toastHandle=setTimeout(()=>{el.hidden=true;},2800);
 }
-function playCue(cue, preview=false) {
-  if(!cue||(!preview&&state.guidance==='off')||state.settings.sound==='silent')return;
+async function ensureAudio() {
+  if(state.settings.sound==='silent')return null;
+  const Audio=window.AudioContext||window.webkitAudioContext;
+  if(!Audio)throw new Error('Web Audio unavailable');
+  if(!audioContext||audioContext.state==='closed')audioContext=new Audio();
+  if(audioContext.state!=='running')await audioContext.resume();
+  return audioContext;
+}
+function audioProblem() { toast(t('声音未能启用，请点按声音试听后重试。')); }
+async function playCue(cue, preview=false, kind=state.session?.kind) {
+  if(!cue)return;
+  if(state.settings.sound==='silent'){
+    if(preview)toast(t('当前为静音，请先在设置中开启提示音。'));
+    return;
+  }
+  // Training guidance controls phase cues only, never completion or other activities.
+  if(!preview&&kind==='training'&&state.guidance==='off'&&['rise2','fall2'].includes(cue))return;
   try {
-    audioContext??=new (window.AudioContext||window.webkitAudioContext)();audioContext.resume();
+    const context=await ensureAudio();
+    if(!context||state.settings.sound==='silent')return;
     const base=state.settings.sound==='chime'?900:430;
     const notes=cue==='rise2'?[1,1.4]:cue==='fall2'?[1.3,.9]:cue==='cheer3'?[1,1.25,1.6]:[1.1,1.4,1.1];
-    notes.forEach((n,i)=>{const osc=audioContext.createOscillator(),gain=audioContext.createGain(),at=audioContext.currentTime+i*.16;osc.type='sine';osc.frequency.setValueAtTime(base*n,at);osc.frequency.exponentialRampToValueAtTime(base*n*.72,at+.13);gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(.08,at+.015);gain.gain.exponentialRampToValueAtTime(.001,at+.15);osc.connect(gain);gain.connect(audioContext.destination);osc.start(at);osc.stop(at+.17);});
-    if(!preview&&state.guidance==='voice'&&state.settings.voice&&'speechSynthesis'in window){const speech=new SpeechSynthesisUtterance(t(cue==='rise2'?'运动时间':cue==='fall2'?'休息一下':cue==='cheer3'?'完成啦，做得好！':'约好的时间到了。'));speech.lang=state.locale;window.speechSynthesis.speak(speech);}
-  }catch{/* Audio is optional in this disposable browser prototype. */}
+    notes.forEach((n,i)=>{const osc=context.createOscillator(),gain=context.createGain(),at=context.currentTime+.02+i*.21;osc.type='sine';osc.frequency.setValueAtTime(base*n,at);osc.frequency.exponentialRampToValueAtTime(base*n*.72,at+.19);gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(.16,at+.02);gain.gain.exponentialRampToValueAtTime(.001,at+.21);osc.connect(gain);gain.connect(context.destination);osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(at);osc.stop(at+.23);});
+    if(!preview&&kind==='training'&&state.guidance==='voice'&&state.settings.voice&&'speechSynthesis'in window){const speech=new SpeechSynthesisUtterance(t(cue==='rise2'?'运动时间':cue==='fall2'?'休息一下':cue==='cheer3'?'完成啦，做得好！':'约好的时间到了。'));speech.lang=state.locale;window.speechSynthesis.cancel();window.speechSynthesis.speak(speech);}
+  }catch{audioProblem();}
 }
 function previewReminder() {
   playCue('call',true);
@@ -381,7 +404,7 @@ function handleAction(action) {
   if(action==='save-tag'){const value=$('#custom-tag').value.trim();if(!value)return $('#custom-tag').focus();state.focus.tag=value;closeDialog();return render(false);}
   if(action==='focus-options'){state.dialog={type:'focus'};return openDialog(`<div class="dialog-header"><h2>${t('长休息循环')}</h2>${btn('close-dialog',icon('close'),'close-button',`aria-label="${t('取消')}"`)}</div><label class="input-group"><span>${t('每几个番茄后长休息')}</span><input class="text-input" type="number" id="focus-rounds" min="1" max="12" value="${state.focus.rounds}"></label><label class="input-group"><span>${t('长休息时长（分钟）')}</span><input class="text-input" type="number" id="focus-long" min="1" max="60" value="${state.focus.longRest}"></label>${btn('save-focus',t('保存'),'primary coral')}`);}
   if(action==='save-focus'){const rounds=Number($('#focus-rounds').value),rest=Number($('#focus-long').value);if(!Number.isInteger(rounds)||rounds<1||rounds>12||!Number.isInteger(rest)||rest<1||rest>60)return toast(t('请输入有效的间隔'));state.focus.rounds=rounds;state.focus.longRest=rest;closeDialog();return render(false);}
-  if(action==='pause-timer'){const s=state.session;if(!s)return;s.elapsed=elapsed();s.anchor=Date.now();s.paused=!s.paused;return render(false);}
+  if(action==='pause-timer'){const s=state.session;if(!s)return;if(s.paused)void ensureAudio().catch(audioProblem);s.elapsed=elapsed();s.anchor=Date.now();s.paused=!s.paused;return render(false);}
   if(action==='skip-timer'){const s=state.session;if(!s)return;const p=projection();if(!p)return finishSession(true);s.skipped+=p.remaining;s.elapsed=elapsed()+p.remaining;s.anchor=Date.now();return updateTimer();}
   if(action==='end-timer')return endDialog();
   if(action==='confirm-end'){closeDialog();return finishSession(false);}

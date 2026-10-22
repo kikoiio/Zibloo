@@ -1,6 +1,8 @@
 :root{--page:#f3f8f5;--ink:#214b4b;--muted:#657f79;--brand:#287f80;--brand-dark:#174f53;--line:#ddeae3;--mint:#4c9277;--sky:#5c98ac;--coral:#c57f63;--shadow:0 10px 30px #235b4910}
 body{background:var(--page)}
 .review-bar{height:46px;background:#eaf2ed;border-color:#dce8e1;padding:0 26px}
+.review-bar>a.speed-button{white-space:nowrap}
+@media(max-width:600px){.review-bar>a.speed-button{display:none}}
 .app-shell{max-width:1260px;min-height:calc(100dvh - 46px);grid-template-columns:225px 1fr}
 .sidebar{padding:42px 30px 30px 23px}
 .wordmark{display:block;line-height:1;letter-spacing:normal}

@@ -1,0 +1,194 @@
+[
+  {
+    "file": "bubble-work.wav",
+    "seconds": 1.0,
+    "peakDbFS": -5.03,
+    "rmsDbFS": -18.81
+  },
+  {
+    "file": "bubble-rest.wav",
+    "seconds": 1.385,
+    "peakDbFS": -5.21,
+    "rmsDbFS": -18.24
+  },
+  {
+    "file": "bubble-complete.wav",
+    "seconds": 1.72,
+    "peakDbFS": -4.62,
+    "rmsDbFS": -18.12
+  },
+  {
+    "file": "bubble-reminder.wav",
+    "seconds": 1.97,
+    "peakDbFS": -5.2,
+    "rmsDbFS": -18.96
+  },
+  {
+    "file": "murmur-work.wav",
+    "seconds": 1.084,
+    "peakDbFS": -6.28,
+    "rmsDbFS": -18.31
+  },
+  {
+    "file": "murmur-rest.wav",
+    "seconds": 1.515,
+    "peakDbFS": -6.4,
+    "rmsDbFS": -18.03
+  },
+  {
+    "file": "murmur-complete.wav",
+    "seconds": 1.89,
+    "peakDbFS": -7.04,
+    "rmsDbFS": -17.81
+  },
+  {
+    "file": "murmur-reminder.wav",
+    "seconds": 2.17,
+    "peakDbFS": -6.27,
+    "rmsDbFS": -18.54
+  },
+  {
+    "file": "glass-work.wav",
+    "seconds": 1.0,
+    "peakDbFS": -5.06,
+    "rmsDbFS": -18.35
+  },
+  {
+    "file": "glass-rest.wav",
+    "seconds": 1.385,
+    "peakDbFS": -5.26,
+    "rmsDbFS": -18.12
+  },
+  {
+    "file": "glass-complete.wav",
+    "seconds": 1.72,
+    "peakDbFS": -4.09,
+    "rmsDbFS": -17.87
+  },
+  {
+    "file": "glass-reminder.wav",
+    "seconds": 1.97,
+    "peakDbFS": -5.03,
+    "rmsDbFS": -18.66
+  },
+  {
+    "file": "wood-work.wav",
+    "seconds": 1.0,
+    "peakDbFS": -2.85,
+    "rmsDbFS": -21.54
+  },
+  {
+    "file": "wood-rest.wav",
+    "seconds": 1.385,
+    "peakDbFS": -2.85,
+    "rmsDbFS": -20.32
+  },
+  {
+    "file": "wood-complete.wav",
+    "seconds": 1.72,
+    "peakDbFS": -2.85,
+    "rmsDbFS": -21.41
+  },
+  {
+    "file": "wood-reminder.wav",
+    "seconds": 1.97,
+    "peakDbFS": -2.85,
+    "rmsDbFS": -22.13
+  },
+  {
+    "file": "orbit-work.wav",
+    "seconds": 1.0,
+    "peakDbFS": -8.35,
+    "rmsDbFS": -18.3
+  },
+  {
+    "file": "orbit-rest.wav",
+    "seconds": 1.385,
+    "peakDbFS": -8.19,
+    "rmsDbFS": -18.02
+  },
+  {
+    "file": "orbit-complete.wav",
+    "seconds": 1.72,
+    "peakDbFS": -7.6,
+    "rmsDbFS": -17.78
+  },
+  {
+    "file": "orbit-reminder.wav",
+    "seconds": 1.97,
+    "peakDbFS": -8.1,
+    "rmsDbFS": -18.53
+  },
+  {
+    "file": "air-work.wav",
+    "seconds": 1.154,
+    "peakDbFS": -8.5,
+    "rmsDbFS": -18.17
+  },
+  {
+    "file": "air-rest.wav",
+    "seconds": 1.624,
+    "peakDbFS": -8.8,
+    "rmsDbFS": -17.98
+  },
+  {
+    "file": "air-complete.wav",
+    "seconds": 2.032,
+    "peakDbFS": -8.91,
+    "rmsDbFS": -17.78
+  },
+  {
+    "file": "air-reminder.wav",
+    "seconds": 2.337,
+    "peakDbFS": -8.84,
+    "rmsDbFS": -18.52
+  },
+  {
+    "file": "pluck-work.wav",
+    "seconds": 1.0,
+    "peakDbFS": -5.59,
+    "rmsDbFS": -18.75
+  },
+  {
+    "file": "pluck-rest.wav",
+    "seconds": 1.385,
+    "peakDbFS": -6.68,
+    "rmsDbFS": -18.08
+  },
+  {
+    "file": "pluck-complete.wav",
+    "seconds": 1.72,
+    "peakDbFS": -5.37,
+    "rmsDbFS": -18.08
+  },
+  {
+    "file": "pluck-reminder.wav",
+    "seconds": 1.97,
+    "peakDbFS": -6.47,
+    "rmsDbFS": -18.98
+  },
+  {
+    "file": "pulse-work.wav",
+    "seconds": 1.0,
+    "peakDbFS": -4.89,
+    "rmsDbFS": -19.3
+  },
+  {
+    "file": "pulse-rest.wav",
+    "seconds": 1.385,
+    "peakDbFS": -4.97,
+    "rmsDbFS": -18.43
+  },
+  {
+    "file": "pulse-complete.wav",
+    "seconds": 1.72,
+    "peakDbFS": -4.76,
+    "rmsDbFS": -18.39
+  },
+  {
+    "file": "pulse-reminder.wav",
+    "seconds": 1.97,
+    "peakDbFS": -4.64,
+    "rmsDbFS": -19.18
+  }
+]

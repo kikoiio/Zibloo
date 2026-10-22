@@ -10,7 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../scratch/p0-v2');
 const output = resolve(here, 'artifacts');
 await mkdir(output, { recursive: true });
-const types = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml', '.png':'image/png' };
+const types = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.svg':'image/svg+xml', '.png':'image/png', '.json':'application/json', '.wav':'audio/wav' };
 const observations = [], errors = [];
 let browser;
 const server = createServer(async (request, response) => {
@@ -30,8 +30,26 @@ const note = message => { observations.push(message); console.log(message); };
 async function capture(page, name) {
   await page.screenshot({ path: resolve(output, name + '.png'), fullPage: true });
 }
-async function open(viewport, { touch = false, clock = false, reduced = false } = {}) {
+async function open(viewport, { touch = false, clock = false, reduced = false, audioProbe = false } = {}) {
   const context = await browser.newContext({ viewport, hasTouch: touch, reducedMotion: reduced ? 'reduce' : 'no-preference', locale: 'zh-CN' });
+  if(audioProbe)await context.addInitScript(()=>{
+    const Native=window.AudioContext;
+    window.__audio={contexts:[],starts:[]};
+    window.AudioContext=class extends Native {
+      constructor(...args){
+        super(...args);
+        this.meter=this.createAnalyser();this.meter.fftSize=2048;
+        const silent=super.createGain();silent.gain.value=0;this.meter.connect(silent);silent.connect(this.destination);
+        window.__audio.contexts.push(this);
+      }
+      createGain(){const node=super.createGain();node.connect(this.meter);return node;}
+      createOscillator(){
+        const node=super.createOscillator(),start=node.start.bind(node);
+        node.start=(...args)=>{window.__audio.starts.push({state:this.state,at:this.currentTime});return start(...args);};
+        return node;
+      }
+    };
+  });
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
   if (clock) await page.clock.install({ time: new Date('2026-10-22T14:00:00Z') });
@@ -216,6 +234,84 @@ try {
     await clearCaption(page,'English app reduced motion');
     await capture(page, 'phone-home-english');
     note('Reminders: weekly form survives redraw, create/edit/disable/delete/preview; English and app reduced motion work');
+    await context.close();
+  }
+  // Actual browser audio processing, with default autoplay policy (no bypass flags).
+  {
+    const {context,page}=await open({width:390,height:844},{touch:true,clock:true,audioProbe:true});
+    await action(page,'quick-1');
+    await page.waitForFunction(()=>window.__audio.contexts[0]?.state==='running');
+    assert.equal(await page.evaluate(()=>window.__audio.starts.length),0,'Quick start should unlock without a cue');
+    await page.clock.fastForward(61000);
+    await page.waitForFunction(()=>window.__audio.starts.length===3);
+    let peak=0;
+    for(let i=0;i<8;i++){
+      await page.waitForTimeout(40);
+      peak=Math.max(peak,await page.evaluate(()=>{
+        const ctx=window.__audio.contexts[0],data=new Float32Array(2048);ctx.meter.getFloatTimeDomainData(data);
+        return Math.max(...data.map(Math.abs));
+      }));
+    }
+    assert.ok(peak>.005,`Completion must output a nonzero signal, got ${peak}`);
+    assert.ok(await page.evaluate(()=>window.__audio.starts.every(s=>s.state==='running')));
+    await action(page,'completion-home');
+    await action(page,'go-training');await action(page,'guidance-off');
+    await action(page,'home');await action(page,'go-focus');await action(page,'start-focus');
+    const before=await page.evaluate(()=>window.__audio.starts.length);
+    await page.clock.fastForward(25*60000+1000);
+    await page.waitForFunction(n=>window.__audio.starts.length===n+2,before);
+    assert.ok((await page.locator('#phase-label').textContent()).includes('休息'));
+    await page.clock.fastForward(5*60000);
+    await page.waitForFunction(n=>window.__audio.starts.length===n+4,before);
+    await action(page,'end-timer');await action(page,'confirm-end');
+    await action(page,'go-training');await action(page,'start-training');
+    const silentPhases=await page.evaluate(()=>window.__audio.starts.length);
+    await page.clock.fastForward(30*1000+1000);
+    assert.equal(await page.evaluate(()=>window.__audio.starts.length),silentPhases,'Training guide off suppresses phases');
+    await page.clock.fastForward(400*1000);
+    await page.waitForFunction(n=>window.__audio.starts.length===n+3,silentPhases);
+    await action(page,'completion-home');await nav(page,'settings');await page.selectOption('#sound','silent');
+    await nav(page,'home');await action(page,'quick-1');
+    const muted=await page.evaluate(()=>window.__audio.starts.length);
+    await page.clock.fastForward(61000);
+    assert.equal(await page.evaluate(()=>window.__audio.starts.length),muted,'Global mute suppresses completion');
+    note(`Audio: quick Start unlocks audio; completion outputs signal (peak ${peak.toFixed(4)}); focus work/rest survives training guide off; guide off still permits training completion; global mute works.`);
+    await context.close();
+  }
+  {
+    const context=await browser.newContext({viewport:{width:1280,height:900},locale:'zh-CN'});
+    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(url+'/sound-lab/index.html');await page.locator('.sound-card').last().waitFor();
+    assert.equal(await page.locator('.sound-card').count(),8);
+    const files=await page.evaluate(async()=>{
+      const manifest=await (await fetch('manifest.json')).json(),decoder=new OfflineAudioContext(1,44100,44100),results=[];
+      for(const style of manifest.styles)for(const file of [...Object.values(style.clips),style.sequence]){
+        const response=await fetch(file);if(!response.ok)throw new Error(file+' unavailable');
+        const buffer=await decoder.decodeAudioData(await response.arrayBuffer()),samples=buffer.getChannelData(0);
+        let peak=0,energy=0;for(const value of samples){peak=Math.max(peak,Math.abs(value));energy+=value*value;}
+        results.push({file,seconds:buffer.duration,peak,rms:Math.sqrt(energy/samples.length)});
+      }
+      return results;
+    });
+    assert.equal(files.length,40);
+    for(const file of files){assert.ok(file.peak>.05&&file.peak<.75,JSON.stringify(file));assert.ok(file.rms>.02,JSON.stringify(file));}
+    await writeFile(resolve(output,'sound-files.json'),JSON.stringify(files,null,2));
+    await page.locator('[data-style="bubble"][data-event="complete"]').click();
+    await page.waitForFunction(()=>!document.querySelector('audio').paused&&document.querySelector('audio').currentTime>0);
+    await page.locator('[data-style="wood"][data-event="rest"]').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentSrc.endsWith('wood-rest.wav')&&!document.querySelector('audio').paused);
+    await page.locator('[data-favorite="bubble"]').click();await page.reload();
+    await page.locator('[data-favorite="bubble"][aria-pressed="true"]').waitFor();
+    await page.selectOption('#event-select','work');await page.locator('#compare-all').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentSrc.endsWith('murmur-work.wav')&&!document.querySelector('audio').paused);
+    await page.locator('#stop').click();
+    assert.ok(await page.locator('audio').evaluate(el=>el.paused));
+    await page.waitForTimeout(1700);
+    assert.ok(await page.locator('audio').evaluate(el=>el.paused),'Stop must cancel the remaining comparison queue');
+    for(const [name,viewport] of [['desktop',{width:1280,height:900}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]){
+      await page.setViewportSize(viewport);await noOverflow(page,'sound-lab '+name);await capture(page,'sound-lab-'+name);
+    }
+    note('Sound lab: 8 styles × 4 events plus 8 sequences decode with nonzero unclipped signal; playback, switching, comparison queue, Stop, persisted shortlist and three responsive widths passed. Timbre/emotion still need human listening.');
     await context.close();
   }
   assert.deepEqual(errors, [], 'Browser runtime errors');
