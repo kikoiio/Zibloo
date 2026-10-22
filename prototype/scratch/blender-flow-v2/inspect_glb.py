@@ -16,7 +16,8 @@ def inspect(path):
     binary_length,binary_kind=struct.unpack_from('<II',raw,offset)
     assert binary_kind==0x004E4942
     binary=raw[offset+8:offset+8+binary_length]
-    skin=next(m for m in document['meshes'] if m.get('name')=='Zibloo_Continuous_Skin')
+    node=next(n for n in document['nodes'] if n.get('name')=='Zibloo_Continuous_Skin')
+    skin=document['meshes'][node['mesh']]
     ranges=[]
     for primitive in skin['primitives']:
         assert 'COLOR_0' in primitive['attributes'], 'Belly vertex color was lost'
