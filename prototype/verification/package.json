@@ -1,0 +1,7 @@
+{
+  "name": "zibloo-prototype-review",
+  "private": true,
+  "type": "module",
+  "scripts": { "review": "node browser-check.mjs" },
+  "dependencies": { "playwright": "1.64.1" }
+}
