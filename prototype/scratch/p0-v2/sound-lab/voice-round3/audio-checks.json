@@ -1,0 +1,152 @@
+[
+  {
+    "file": "coo-greet.wav",
+    "seconds": 0.975,
+    "peakDbFS": -8.67,
+    "rmsDbFS": -19.08
+  },
+  {
+    "file": "coo-work.wav",
+    "seconds": 0.68,
+    "peakDbFS": -8.13,
+    "rmsDbFS": -19.52
+  },
+  {
+    "file": "coo-rest.wav",
+    "seconds": 1.055,
+    "peakDbFS": -9.2,
+    "rmsDbFS": -19.84
+  },
+  {
+    "file": "coo-complete.wav",
+    "seconds": 1.3,
+    "peakDbFS": -7.47,
+    "rmsDbFS": -18.94
+  },
+  {
+    "file": "coo-reminder.wav",
+    "seconds": 1.235,
+    "peakDbFS": -9.06,
+    "rmsDbFS": -19.98
+  },
+  {
+    "file": "coo-sequence.wav",
+    "seconds": 6.07,
+    "peakDbFS": -7.47,
+    "rmsDbFS": -21.06
+  },
+  {
+    "file": "chirrup-greet.wav",
+    "seconds": 0.907,
+    "peakDbFS": -8.98,
+    "rmsDbFS": -19.22
+  },
+  {
+    "file": "chirrup-work.wav",
+    "seconds": 0.639,
+    "peakDbFS": -10.05,
+    "rmsDbFS": -19.51
+  },
+  {
+    "file": "chirrup-rest.wav",
+    "seconds": 0.98,
+    "peakDbFS": -9.92,
+    "rmsDbFS": -19.86
+  },
+  {
+    "file": "chirrup-complete.wav",
+    "seconds": 1.203,
+    "peakDbFS": -9.1,
+    "rmsDbFS": -18.9
+  },
+  {
+    "file": "chirrup-reminder.wav",
+    "seconds": 1.144,
+    "peakDbFS": -10.12,
+    "rmsDbFS": -19.98
+  },
+  {
+    "file": "chirrup-sequence.wav",
+    "seconds": 5.767,
+    "peakDbFS": -9.1,
+    "rmsDbFS": -21.15
+  },
+  {
+    "file": "hum-greet.wav",
+    "seconds": 0.975,
+    "peakDbFS": -10.23,
+    "rmsDbFS": -19.12
+  },
+  {
+    "file": "hum-work.wav",
+    "seconds": 0.68,
+    "peakDbFS": -9.74,
+    "rmsDbFS": -19.55
+  },
+  {
+    "file": "hum-rest.wav",
+    "seconds": 1.055,
+    "peakDbFS": -10.44,
+    "rmsDbFS": -19.84
+  },
+  {
+    "file": "hum-complete.wav",
+    "seconds": 1.3,
+    "peakDbFS": -9.96,
+    "rmsDbFS": -18.93
+  },
+  {
+    "file": "hum-reminder.wav",
+    "seconds": 1.235,
+    "peakDbFS": -10.44,
+    "rmsDbFS": -19.91
+  },
+  {
+    "file": "hum-sequence.wav",
+    "seconds": 6.07,
+    "peakDbFS": -9.74,
+    "rmsDbFS": -21.05
+  },
+  {
+    "file": "breeze-greet.wav",
+    "seconds": 0.975,
+    "peakDbFS": -7.99,
+    "rmsDbFS": -19.13
+  },
+  {
+    "file": "breeze-work.wav",
+    "seconds": 0.68,
+    "peakDbFS": -9.24,
+    "rmsDbFS": -19.54
+  },
+  {
+    "file": "breeze-rest.wav",
+    "seconds": 1.055,
+    "peakDbFS": -10.08,
+    "rmsDbFS": -19.8
+  },
+  {
+    "file": "breeze-complete.wav",
+    "seconds": 1.3,
+    "peakDbFS": -8.97,
+    "rmsDbFS": -18.96
+  },
+  {
+    "file": "breeze-reminder.wav",
+    "seconds": 1.235,
+    "peakDbFS": -8.94,
+    "rmsDbFS": -19.99
+  },
+  {
+    "file": "breeze-sequence.wav",
+    "seconds": 6.07,
+    "peakDbFS": -8.94,
+    "rmsDbFS": -21.07
+  },
+  {
+    "file": "compare-greetings.wav",
+    "seconds": 6.032,
+    "peakDbFS": -7.99,
+    "rmsDbFS": -21.11
+  }
+]

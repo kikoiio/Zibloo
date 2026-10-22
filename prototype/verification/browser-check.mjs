@@ -34,7 +34,7 @@ async function open(viewport, { touch = false, clock = false, reduced = false, a
   const context = await browser.newContext({ viewport, hasTouch: touch, reducedMotion: reduced ? 'reduce' : 'no-preference', locale: 'zh-CN' });
   if(audioProbe)await context.addInitScript(()=>{
     const Native=window.AudioContext;
-    window.__audio={contexts:[],starts:[]};
+    window.__audio={contexts:[],starts:[],buffers:[]};
     window.AudioContext=class extends Native {
       constructor(...args){
         super(...args);
@@ -46,6 +46,15 @@ async function open(viewport, { touch = false, clock = false, reduced = false, a
       createOscillator(){
         const node=super.createOscillator(),start=node.start.bind(node);
         node.start=(...args)=>{window.__audio.starts.push({state:this.state,at:this.currentTime});return start(...args);};
+        return node;
+      }
+      createBufferSource(){
+        const node=super.createBufferSource(),start=node.start.bind(node);node.connect(this.meter);
+        node.start=(...args)=>{
+          const samples=node.buffer.getChannelData(0);let peak=0;
+          for(const value of samples)peak=Math.max(peak,Math.abs(value));
+          window.__audio.buffers.push({state:this.state,duration:node.buffer.duration,peak});return start(...args);
+        };
         return node;
       }
     };
@@ -375,6 +384,68 @@ try {
       await capture(page,'name-voice-'+name);
     }
     note('Name voice round 2: 3 articulation choices × 5 calls, 3 four-event sequences, A/B/C comparison and 7 shortlisted timbres (26 WAVs) decode with signal and quiet endings; playback/switching/queued Stop, texture auditions, independent persisted shortlist, copied selections, approved art reference, reduced motion and four widths passed. Name intelligibility and emotional quality require human listening.');
+    await context.close();
+  }
+  {
+    const {context,page}=await open({width:390,height:844},{touch:true,clock:true,audioProbe:true});
+    await page.goto(url+'/sound-lab/voice-round3/index.html');await page.locator('.sound-card').last().waitFor();
+    assert.equal(await page.locator('.sound-card').count(),4);
+    const files=await page.evaluate(async()=>{
+      const m=await(await fetch('manifest.json')).json(),decoder=new OfflineAudioContext(1,44100,44100),results=[];
+      for(const file of [...m.styles.flatMap(s=>[s.greeting,...Object.values(s.clips),s.sequence]),m.comparison]){
+        const response=await fetch(file);if(!response.ok)throw new Error(file+' unavailable');
+        const b=await decoder.decodeAudioData(await response.arrayBuffer()),samples=b.getChannelData(0);
+        let peak=0,energy=0;for(const v of samples){assertFinite(v);peak=Math.max(peak,Math.abs(v));energy+=v*v;}
+        results.push({file,seconds:b.duration,peak,rms:Math.sqrt(energy/samples.length)});
+      }
+      function assertFinite(v){if(!Number.isFinite(v))throw new Error('Invalid audio sample');}
+      return results;
+    });
+    assert.equal(files.length,25);
+    for(const file of files){assert.ok(file.peak>.05&&file.peak<.7,JSON.stringify(file));assert.ok(file.rms>.02,JSON.stringify(file));}
+    await writeFile(resolve(output,'temporary-voice-files.json'),JSON.stringify(files,null,2));
+    await page.locator('[data-style="coo"][data-event="greet"]').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentTime>0&&!document.querySelector('audio').paused);
+    await page.locator('#compare-all').click();
+    await page.waitForFunction(()=>document.querySelector('audio').currentSrc.endsWith('chirrup-greet.wav')&&!document.querySelector('audio').paused);
+    await page.locator('#stop').click();await page.waitForTimeout(1700);
+    assert.ok(await page.locator('audio').evaluate(el=>el.paused));
+    await page.locator('[data-favorite="coo"]').click();await page.reload();
+    await page.locator('[data-favorite="coo"][aria-pressed="true"]').waitFor();
+    for(const [name,viewport] of [['desktop',{width:1280,height:900}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]){
+      await page.setViewportSize(viewport);await noOverflow(page,'temporary voice '+name);await capture(page,'temporary-voice-'+name);
+    }
+    await page.locator('#style-coo .use-voice').click();
+    await page.locator('#sound').waitFor();assert.equal(await page.inputValue('#sound'),'temp-coo');
+    assert.ok(!page.url().includes('voice='),'Apply URL must be consumed so future setting changes survive reload');
+    await action(page,'preview-sound');await page.waitForFunction(()=>window.__audio.buffers.length===1);
+    await nav(page,'home');await action(page,'quick-1');
+    await page.clock.fastForward(61000);await page.waitForFunction(()=>window.__audio.buffers.length===2);
+    await action(page,'completion-home');await action(page,'go-training');await action(page,'start-training');
+    await page.waitForFunction(()=>window.__audio.buffers.length===3);
+    await page.clock.fastForward(31000);await page.waitForFunction(()=>window.__audio.buffers.length===4);
+    const expected=file=>files.find(f=>f.file===file).seconds;
+    const played=await page.evaluate(()=>window.__audio.buffers);
+    assert.ok(Math.abs(played[2].duration-expected('audio/coo-work.wav'))<.001);
+    assert.ok(Math.abs(played[3].duration-expected('audio/coo-rest.wav'))<.001);
+    assert.ok(played.every(b=>b.state==='running'&&b.peak>.05));
+    await action(page,'end-timer');await action(page,'confirm-end');await nav(page,'settings');
+    await page.selectOption('#sound','silent');await page.reload();await nav(page,'settings');
+    assert.equal(await page.inputValue('#sound'),'silent','Explicit mute survives reload after apply URL');
+    await nav(page,'home');await action(page,'quick-1');await page.clock.fastForward(61000);
+    assert.equal(await page.evaluate(()=>window.__audio.buffers.length),0,'Mute prevents decoded voice playback');
+    await action(page,'completion-home');await nav(page,'settings');
+    for(const voice of ['temp-chirrup','temp-hum','temp-breeze']){
+      await page.selectOption('#sound',voice);const count=await page.evaluate(()=>window.__audio.buffers.length);
+      await action(page,'preview-sound');await page.waitForFunction(n=>window.__audio.buffers.length===n+1,count);
+    }
+    await capture(page,'temporary-voice-settings');
+    // A slow asset response must not speak after the user changes to mute.
+    await page.route('**/coo-*.wav',async route=>{await new Promise(resolve=>setTimeout(resolve,350));await route.continue();});
+    await page.selectOption('#sound','temp-coo');const beforeMutedLoad=await page.evaluate(()=>window.__audio.buffers.length);
+    await action(page,'preview-sound');await page.selectOption('#sound','silent');await page.waitForTimeout(700);
+    assert.equal(await page.evaluate(()=>window.__audio.buffers.length),beforeMutedLoad,'Pending voice is canceled by mute');
+    note('Temporary round 3: 25 WAVs decode with nonzero unclipped signal; four-style playback/queue/Stop/shortlist and three widths pass. Apply-to-timer works; work/rest/complete play the mapped buffers in running AudioContext; four presets preview; preference and mute survive reload; slow pending voice is canceled by mute. Subjective emotion and timbre require user listening.');
     await context.close();
   }
   assert.deepEqual(errors, [], 'Browser runtime errors');

@@ -88,6 +88,11 @@ const copy = {
   '探索 Zibloo 的声音':'Explore Zibloo’s voice',
   '8 种音色，分别试听工作、休息与提醒':'8 voices for work, breaks, and reminders',
   '听 Zibloo 怎样叫自己的名字':'Hear Zibloo call its own name',
+  '临时 · 轻声咕呼':'Temporary · Soft coo',
+  '临时 · 灵巧啾噜':'Temporary · Chirrup',
+  '临时 · 温暖哼鸣':'Temporary · Warm hum',
+  '临时 · 清透轻呼':'Temporary · Airy call',
+  '再试听几种临时叫声':'Try the new temporary voices',
 };
 const state = {
   locale: 'zh-CN', page: 'home', speed: 1, guidance: 'cues', characterPreview: 'auto',
@@ -130,6 +135,21 @@ const header = (title, subtitle) => `<header class="page-header"><div><h1>${t(ti
 const backHeader = title => `<header class="back-header">${btn('home',icon('back'),'back-button',`aria-label="${t('返回小窝')}"`)}<div><h1>${t(title)}</h1></div></header>`;
 const templates = [ ['经典间歇',30,15,8], ['Tabata',20,10,8], ['力量训练',40,20,6], ['耐力训练',60,30,4] ];
 let toastHandle, audioContext, previousFocus, greetingHandle;
+const temporaryVoices={'temp-coo':'临时 · 轻声咕呼','temp-chirrup':'临时 · 灵巧啾噜','temp-hum':'临时 · 温暖哼鸣','temp-breeze':'临时 · 清透轻呼'};
+const soundPreferenceKey='zibloo-prototype-sound';
+const validSounds=new Set(['zibloo','chime','silent',...Object.keys(temporaryVoices)]);
+const requestedVoice=new URLSearchParams(location.search).get('voice');
+try {
+  const stored=localStorage.getItem(soundPreferenceKey);
+  if(validSounds.has(stored))state.settings.sound=stored;
+  if(Object.hasOwn(temporaryVoices,requestedVoice)){state.settings.sound=requestedVoice;localStorage.setItem(soundPreferenceKey,requestedVoice);}
+}catch{if(Object.hasOwn(temporaryVoices,requestedVoice))state.settings.sound=requestedVoice;}
+if(Object.hasOwn(temporaryVoices,requestedVoice)){
+  state.page='settings';
+  const cleanUrl=new URL(location.href);cleanUrl.searchParams.delete('voice');history.replaceState(null,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash);
+}
+const cueBuffers=new Map();
+let pendingCue=0,activeTemporaryCue;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function updateCharacter() {
   document.querySelectorAll('.live-zibloo').forEach(el => {
@@ -221,6 +241,7 @@ function remindersPage() {
 function buildSession(kind, minutes=1) {
   // Unlock on the actual Start click, including quick/focus timers without an opening cue.
   void ensureAudio().catch(audioProblem);
+  if(Object.hasOwn(temporaryVoices,state.settings.sound))void prepareTemporaryVoice(state.settings.sound).catch(()=>{});
   const segments=[];
   if(kind==='training') {
     const p=state.training;
@@ -302,10 +323,10 @@ function settingsPage() {
   const p=state.settings;
   return `${header('设置','让陪伴，更合心意。')}<section class="settings-section"><h2>${t('偏好')}</h2><div class="settings-group">
     <label class="setting-row"><span>${t('语言')}</span><select id="language"><option value="zh-CN" ${state.locale==='zh-CN'?'selected':''}>简体中文</option><option value="en" ${state.locale==='en'?'selected':''}>English</option></select></label>
-    <label class="setting-row"><span>${t('提示音')}</span><select id="sound">${[['zibloo','Zibloo 叫声'],['chime','清脆'],['silent','静音']].map(([v,l])=>`<option value="${v}" ${p.sound===v?'selected':''}>${t(l)}</option>`).join('')}</select></label>
+    <label class="setting-row"><span>${t('提示音')}</span><select id="sound">${[['zibloo','Zibloo 叫声'],['chime','清脆'],...Object.entries(temporaryVoices),['silent','静音']].map(([v,l])=>`<option value="${v}" ${p.sound===v?'selected':''}>${t(l)}</option>`).join('')}</select></label>
     <label class="setting-row"><span>${t('震动强度')}</span><select id="vibration">${[['light','轻'],['standard','标准'],['strong','强']].map(([v,l])=>`<option value="${v}" ${p.vibration===v?'selected':''}>${t(l)}</option>`).join('')}</select></label>
     <div class="setting-row"><span>${t('语音播报')}</span>${toggle('toggle-voice',p.voice,t('语音播报'))}</div><div class="setting-row"><span>${t('减少动态效果')}</span>${toggle('toggle-reduced',p.reduced,t('减少动态效果'))}</div>
-    <div class="setting-row">${btn('preview-sound',t('在原型中试听提示音'),'text-button')}</div><a class="setting-row" href="sound-lab/voice-round2/index.html"><span>${t('探索 Zibloo 的声音')}<small>${t('听 Zibloo 怎样叫自己的名字')}</small></span>${icon('chevron')}</a></div></section>
+    <div class="setting-row">${btn('preview-sound',t('在原型中试听提示音'),'text-button')}</div><a class="setting-row" href="sound-lab/voice-round3/index.html"><span>${t('探索 Zibloo 的声音')}<small>${t('再试听几种临时叫声')}</small></span>${icon('chevron')}</a></div></section>
     <section class="settings-section"><h2>${t('数据与关于')}</h2><div class="settings-group"><div class="setting-row"><span>${t('导出记录')}<small>${t('导出本次原型中的示例与体验记录')}</small></span>${btn('export',icon('export'),'setting-value',`aria-label="${t('导出记录')}"`)}</div><div class="setting-row"><span>${t('版本')}</span><span class="setting-value">${t('P0 交互原型')}</span></div></div></section>
     <p class="info-note">${icon('info')}<span>${t('网页演示，不承诺后台提醒。安卓可靠性需后续真机验收。')}</span></p><div class="brand-footer">${Zibloo.logo()}</div>`;
 }
@@ -363,7 +384,25 @@ async function ensureAudio() {
   return audioContext;
 }
 function audioProblem() { toast(t('声音未能启用，请点按声音试听后重试。')); }
+function temporaryBuffer(voice,event,context) {
+  const file=`sound-lab/voice-round3/audio/${voice.slice(5)}-${event}.wav`;
+  if(!cueBuffers.has(file)){
+    const loaded=fetch(file).then(response=>{if(!response.ok)throw new Error('Audio unavailable');return response.arrayBuffer();}).then(data=>context.decodeAudioData(data));
+    cueBuffers.set(file,loaded);
+    loaded.catch(()=>cueBuffers.delete(file));
+  }
+  return cueBuffers.get(file);
+}
+async function prepareTemporaryVoice(voice) {
+  const context=await ensureAudio();if(!context)return;
+  await Promise.all(['work','rest','complete','reminder','greet'].map(event=>temporaryBuffer(voice,event,context)));
+}
+function stopTemporaryCue() {
+  pendingCue++;
+  if(activeTemporaryCue){activeTemporaryCue.stop();activeTemporaryCue.disconnect();activeTemporaryCue=null;}
+}
 async function playCue(cue, preview=false, kind=state.session?.kind) {
+  const token=++pendingCue;
   if(!cue)return;
   if(state.settings.sound==='silent'){
     if(preview)toast(t('当前为静音，请先在设置中开启提示音。'));
@@ -372,11 +411,21 @@ async function playCue(cue, preview=false, kind=state.session?.kind) {
   // Training guidance controls phase cues only, never completion or other activities.
   if(!preview&&kind==='training'&&state.guidance==='off'&&['rise2','fall2'].includes(cue))return;
   try {
+    const selected=state.settings.sound;
     const context=await ensureAudio();
-    if(!context||state.settings.sound==='silent')return;
+    if(!context||state.settings.sound!==selected||token!==pendingCue)return;
+    if(Object.hasOwn(temporaryVoices,selected)){
+      const event=cue==='rise2'?'work':cue==='fall2'?'rest':cue==='cheer3'?'complete':cue==='hello'?'greet':'reminder';
+      const buffer=await temporaryBuffer(selected,event,context);
+      if(state.settings.sound!==selected||token!==pendingCue)return;
+      if(activeTemporaryCue){activeTemporaryCue.stop();activeTemporaryCue.disconnect();}
+      const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);
+      activeTemporaryCue=source;source.onended=()=>{source.disconnect();if(activeTemporaryCue===source)activeTemporaryCue=null;};source.start();
+    }else{
     const base=state.settings.sound==='chime'?900:430;
     const notes=cue==='rise2'?[1,1.4]:cue==='fall2'?[1.3,.9]:cue==='cheer3'?[1,1.25,1.6]:[1.1,1.4,1.1];
     notes.forEach((n,i)=>{const osc=context.createOscillator(),gain=context.createGain(),at=context.currentTime+.02+i*.21;osc.type='sine';osc.frequency.setValueAtTime(base*n,at);osc.frequency.exponentialRampToValueAtTime(base*n*.72,at+.19);gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(.16,at+.02);gain.gain.exponentialRampToValueAtTime(.001,at+.21);osc.connect(gain);gain.connect(context.destination);osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(at);osc.stop(at+.23);});
+    }
     if(!preview&&kind==='training'&&state.guidance==='voice'&&state.settings.voice&&'speechSynthesis'in window){const speech=new SpeechSynthesisUtterance(t(cue==='rise2'?'运动时间':cue==='fall2'?'休息一下':cue==='cheer3'?'完成啦，做得好！':'约好的时间到了。'));speech.lang=state.locale;window.speechSynthesis.cancel();window.speechSynthesis.speak(speech);}
   }catch{audioProblem();}
 }
@@ -391,7 +440,7 @@ function handleAction(action) {
     state.characterPreview='auto';$('#character-preview').value='auto';updateCharacter();
     const el=$('.mascot-main .live-zibloo');
     Zibloo.greet(el);
-    playCue('call',true);return toast(t('你好呀，我是 Zibloo！'));
+    playCue('hello',true);return toast(t('你好呀，我是 Zibloo！'));
   }
   if(action.startsWith('quick-'))return buildSession('quick',Number(action.slice(6)));
   if(action.startsWith('preset-')){const i=Number(action.slice(7)),[,work,rest,rounds]=templates[i];state.training={work,rest,rounds,preset:i};return render(false);}
@@ -436,7 +485,10 @@ document.addEventListener('change',event=>{
   const el=event.target;
   if(el.id==='character-preview'){state.characterPreview=el.value;updateCharacter();}
   if(el.id==='language'){state.locale=el.value;clearTimeout(toastHandle);$('.toast').hidden=true;render(false);}
-  if(el.id==='sound')state.settings.sound=el.value;
+  if(el.id==='sound'){
+    stopTemporaryCue();state.settings.sound=el.value;
+    try{localStorage.setItem(soundPreferenceKey,el.value);}catch{/* Optional prototype preference. */}
+  }
   if(el.id==='vibration')state.settings.vibration=el.value;
   if(el.id==='reminder-rule'){syncReminderForm();const r=state.dialog.reminder;r.rule=el.value;r.time=el.value==='at'?'':r.time.includes(':')&&r.time.length===5?r.time:'08:30';r.amount=el.value==='interval'?2:30;drawReminderDialog();}
 });
