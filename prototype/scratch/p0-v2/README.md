@@ -23,3 +23,11 @@
 ## 验证
 
 已确认原图文件一致并完成 JavaScript 语法检查；恢复版的[GitHub Actions 验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/39744898017)，覆盖原图文件校验、原图引用、四种宽度、悬浮/静止和主要流程。[恢复版截图与记录](../../review/approved-originals-2026-10-22/README.md)。上一版检查不能作为本版形象一致性验收。
+
+## 声音探索与提醒修复
+
+独立[声音试听页](sound-lab/index.html)：8 种音色 × 工作、休息、完成、日常提醒 4 段，另附每组串联。可按同一事件横向比较、停止、收藏候选；本轮未将候选设为计时器默认。详见[声音设计与素材说明](sound-lab/README.md)。
+
+计时 Start/继续点击时启用浏览器音频；播放前等待恢复。训练关闭阶段引导不再屏蔽完成提示与其他活动，全局静音仍有效。原有临时完成提示稍延长、增强，待选定品牌声音后替换。
+
+本次[声音验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/39748474988)，提交 `1788fd517b6ab3263eef7f280689fb85c8559e1e`；[截图和检查记录](../../review/sound-exploration-2026-10-22/README.md)。
