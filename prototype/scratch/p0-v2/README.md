@@ -26,6 +26,6 @@
 
 已完成 JavaScript 语法检查、SVG 静态渲染检查和轻量 DOM 替身下的计时/表单流程检查。后者不能替代真实浏览器验证。
 
-用户已授权在 `kikoiio/Zibloo` 的 GitHub Actions 执行真实 Chromium 桌面/手机布局、动作与流程验证。脚本位于 `../../verification/`，结果与截图以 Actions artifact 为准；执行结果待本次云端运行补充。
+用户授权的 [GitHub Actions Chromium 验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/39733464150)，验证提交 `0f48b64360e28d2e0b4f5f59e08513d2918a4bb2`。覆盖 1280/768/390/320 像素宽度、角色形变与减少动态效果、触屏和键盘、主要计时/提醒及语言流程。已目视检查截图并修正文字避让和语言切换时旧提示残留。脚本位于 `../../verification/`；本机保存的[截图与验证记录](../../review/p0-v2-2026-10-22/README.md)用于继续评审，用户尚未验收最终视觉与动作。
 
 修改 `mascot.js` 后执行 `node export-assets.cjs`，同步生成静态角色和字标 SVG。

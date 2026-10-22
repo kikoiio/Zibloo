@@ -8,4 +8,4 @@
 
 专注长时流程使用浏览器模拟时钟推进，不等待真实几十分钟。云端浏览器结果不能替代安卓真机后台、锁屏与重启可靠性验收。
 
-Artifacts：截图与 `observations.json`，保留 7 天。结果待云端实际运行补充。
+Artifacts：截图与 `observations.json`，保留 7 天。[本次运行已通过](https://github.com/kikoiio/Zibloo/actions/runs/39733464150)，验证提交 `0f48b64360e28d2e0b4f5f59e08513d2918a4bb2`。本机保存的[截图与检查记录](../review/p0-v2-2026-10-22/README.md)可继续用于用户评审。

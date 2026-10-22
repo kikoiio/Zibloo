@@ -1,0 +1,14 @@
+{
+  "observations": [
+    "desktop: home fits width; three distinct mode targets visible",
+    "tablet: home fits width; three distinct mode targets visible",
+    "phone: home fits width; three distinct mode targets visible",
+    "small-phone: home fits width; three distinct mode targets visible",
+    "Motion: arms change continuously; focus and OS reduced motion freeze them; keyboard greeting works",
+    "Touch flow: greeting, quick timer, pause/resume, completion/history, training phase change, skip, early end",
+    "Focus flow: escaped custom tag, two focus rounds, short break, long break, complete (browser clock advanced)",
+    "Reminders: weekly form survives redraw, create/edit/disable/delete/preview; English and app reduced motion work",
+    "No browser runtime errors observed."
+  ],
+  "errors": []
+}
