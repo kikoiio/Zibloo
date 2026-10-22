@@ -84,12 +84,14 @@ try {
     assert.equal(await path.getAttribute('d'), quiet, 'Focus should stay quiet');
     await page.selectOption('#character-preview', 'auto');
     await page.emulateMedia({reducedMotion:'reduce'});
+    await page.waitForFunction(()=>document.querySelector('#character-state-label')?.textContent.includes('已减少动态效果'));
     const still = await path.getAttribute('d');
     await page.waitForTimeout(450);
     assert.equal(await path.getAttribute('d'), still, 'System reduced motion should stop deformation');
     await clearCaption(page,'system reduced motion');
     await capture(page, 'reduced-motion-home');
     await page.emulateMedia({reducedMotion:'no-preference'});
+    await page.waitForFunction(()=>document.querySelector('#character-state-label')?.textContent.includes('自在悬游'));
     await page.keyboard.press('Tab');
     await page.locator('.mascot-main').focus();
     await page.keyboard.press('Enter');
