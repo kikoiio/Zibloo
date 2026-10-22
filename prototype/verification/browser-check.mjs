@@ -87,6 +87,14 @@ try {
     assert.equal(hash,asset.sha256,`${name}: approved artwork source changed`);
   }
   note('Saved B2/C3 original file hashes match the approved artwork manifest.');
+  const selectedSounds=JSON.parse(await readFile(resolve(root,'assets/sounds/manifest.json'),'utf8'));
+  assert.deepEqual(Object.keys(selectedSounds.presets),['chirrup','breeze']);
+  for(const preset of Object.values(selectedSounds.presets))for(const event of Object.values(preset.events)){
+    const bytes=await readFile(resolve(root,'assets/sounds',event.file));
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),event.sha256);
+    assert.ok(bytes.equals(await readFile(resolve(root,event.source))),'Selected voice must preserve the approved audio samples');
+  }
+  note('Selected E/G preset files exactly match round 3 originals (10 WAV hashes).');
   browser = await chromium.launch({ headless: true, args: ['--disable-gpu'] });
   for (const [name, viewport] of [['desktop',{width:1280,height:900}],['tablet',{width:768,height:1024}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]) {
     const { context, page } = await open(viewport, { touch: viewport.width < 600 });
@@ -250,9 +258,9 @@ try {
     const {context,page}=await open({width:390,height:844},{touch:true,clock:true,audioProbe:true});
     await action(page,'quick-1');
     await page.waitForFunction(()=>window.__audio.contexts[0]?.state==='running');
-    assert.equal(await page.evaluate(()=>window.__audio.starts.length),0,'Quick start should unlock without a cue');
+    assert.equal(await page.evaluate(()=>window.__audio.buffers.length),0,'Quick start should unlock without a cue');
     await page.clock.fastForward(61000);
-    await page.waitForFunction(()=>window.__audio.starts.length===3);
+    await page.waitForFunction(()=>window.__audio.buffers.length===1);
     let peak=0;
     for(let i=0;i<8;i++){
       await page.waitForTimeout(40);
@@ -262,28 +270,29 @@ try {
       }));
     }
     assert.ok(peak>.005,`Completion must output a nonzero signal, got ${peak}`);
-    assert.ok(await page.evaluate(()=>window.__audio.starts.every(s=>s.state==='running')));
+    assert.ok(await page.evaluate(()=>window.__audio.buffers.every(s=>s.state==='running')));
     await action(page,'completion-home');
     await action(page,'go-training');await action(page,'guidance-off');
     await action(page,'home');await action(page,'go-focus');await action(page,'start-focus');
-    const before=await page.evaluate(()=>window.__audio.starts.length);
+    await page.waitForFunction(()=>window.__audio.buffers.length===2);
+    const before=await page.evaluate(()=>window.__audio.buffers.length);
     await page.clock.fastForward(25*60000+1000);
-    await page.waitForFunction(n=>window.__audio.starts.length===n+2,before);
+    await page.waitForFunction(n=>window.__audio.buffers.length===n+1,before);
     assert.ok((await page.locator('#phase-label').textContent()).includes('休息'));
     await page.clock.fastForward(5*60000);
-    await page.waitForFunction(n=>window.__audio.starts.length===n+4,before);
+    await page.waitForFunction(n=>window.__audio.buffers.length===n+2,before);
     await action(page,'end-timer');await action(page,'confirm-end');
     await action(page,'go-training');await action(page,'start-training');
-    const silentPhases=await page.evaluate(()=>window.__audio.starts.length);
+    const silentPhases=await page.evaluate(()=>window.__audio.buffers.length);
     await page.clock.fastForward(30*1000+1000);
-    assert.equal(await page.evaluate(()=>window.__audio.starts.length),silentPhases,'Training guide off suppresses phases');
+    assert.equal(await page.evaluate(()=>window.__audio.buffers.length),silentPhases,'Training guide off suppresses phases');
     await page.clock.fastForward(400*1000);
-    await page.waitForFunction(n=>window.__audio.starts.length===n+3,silentPhases);
+    await page.waitForFunction(n=>window.__audio.buffers.length===n+1,silentPhases);
     await action(page,'completion-home');await nav(page,'settings');await page.selectOption('#sound','silent');
     await nav(page,'home');await action(page,'quick-1');
-    const muted=await page.evaluate(()=>window.__audio.starts.length);
+    const muted=await page.evaluate(()=>window.__audio.buffers.length);
     await page.clock.fastForward(61000);
-    assert.equal(await page.evaluate(()=>window.__audio.starts.length),muted,'Global mute suppresses completion');
+    assert.equal(await page.evaluate(()=>window.__audio.buffers.length),muted,'Global mute suppresses completion');
     note(`Audio: quick Start unlocks audio; completion outputs signal (peak ${peak.toFixed(4)}); focus work/rest survives training guide off; guide off still permits training completion; global mute works.`);
     await context.close();
   }
@@ -415,10 +424,10 @@ try {
     for(const [name,viewport] of [['desktop',{width:1280,height:900}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]){
       await page.setViewportSize(viewport);await noOverflow(page,'temporary voice '+name);await capture(page,'temporary-voice-'+name);
     }
-    await page.locator('#style-coo .use-voice').click();
-    await page.locator('#sound').waitFor();assert.equal(await page.inputValue('#sound'),'temp-coo');
+    await page.locator('#style-chirrup .use-voice').click();
+    await page.locator('#sound').waitFor();assert.equal(await page.inputValue('#sound'),'chirrup');
     assert.ok(!page.url().includes('voice='),'Apply URL must be consumed so future setting changes survive reload');
-    await action(page,'preview-sound');await page.waitForFunction(()=>window.__audio.buffers.length===1);
+    await action(page,'preview-cue-cheer3');await page.waitForFunction(()=>window.__audio.buffers.length===1);
     await nav(page,'home');await action(page,'quick-1');
     await page.clock.fastForward(61000);await page.waitForFunction(()=>window.__audio.buffers.length===2);
     await action(page,'completion-home');await action(page,'go-training');await action(page,'start-training');
@@ -426,8 +435,8 @@ try {
     await page.clock.fastForward(31000);await page.waitForFunction(()=>window.__audio.buffers.length===4);
     const expected=file=>files.find(f=>f.file===file).seconds;
     const played=await page.evaluate(()=>window.__audio.buffers);
-    assert.ok(Math.abs(played[2].duration-expected('audio/coo-work.wav'))<.001);
-    assert.ok(Math.abs(played[3].duration-expected('audio/coo-rest.wav'))<.001);
+    assert.ok(Math.abs(played[2].duration-expected('audio/chirrup-work.wav'))<.001);
+    assert.ok(Math.abs(played[3].duration-expected('audio/chirrup-rest.wav'))<.001);
     assert.ok(played.every(b=>b.state==='running'&&b.peak>.05));
     await action(page,'end-timer');await action(page,'confirm-end');await nav(page,'settings');
     await page.selectOption('#sound','silent');await page.reload();await nav(page,'settings');
@@ -435,19 +444,67 @@ try {
     await nav(page,'home');await action(page,'quick-1');await page.clock.fastForward(61000);
     assert.equal(await page.evaluate(()=>window.__audio.buffers.length),0,'Mute prevents decoded voice playback');
     await action(page,'completion-home');await nav(page,'settings');
-    for(const voice of ['temp-chirrup','temp-hum','temp-breeze']){
+    for(const voice of ['chirrup','breeze']){
       await page.selectOption('#sound',voice);const count=await page.evaluate(()=>window.__audio.buffers.length);
-      await action(page,'preview-sound');await page.waitForFunction(n=>window.__audio.buffers.length===n+1,count);
+      await action(page,'preview-cue-cheer3');await page.waitForFunction(n=>window.__audio.buffers.length===n+1,count);
     }
-    await capture(page,'temporary-voice-settings');
+    assert.deepEqual(await page.locator('#sound option').evaluateAll(options=>options.map(o=>o.value)),['chirrup','breeze','silent']);
+    await capture(page,'selected-voice-settings');
+    await page.reload();await nav(page,'settings');
     // A slow asset response must not speak after the user changes to mute.
-    await page.route('**/coo-*.wav',async route=>{await new Promise(resolve=>setTimeout(resolve,350));await route.continue();});
-    await page.selectOption('#sound','temp-coo');const beforeMutedLoad=await page.evaluate(()=>window.__audio.buffers.length);
-    await action(page,'preview-sound');await page.selectOption('#sound','silent');await page.waitForTimeout(700);
+    await page.route('**/assets/sounds/chirrup/*.wav',async route=>{await new Promise(resolve=>setTimeout(resolve,350));await route.continue();});
+    await page.selectOption('#sound','chirrup');const beforeMutedLoad=await page.evaluate(()=>window.__audio.buffers.length);
+    await action(page,'preview-cue-cheer3');await page.selectOption('#sound','silent');await page.waitForTimeout(700);
     assert.equal(await page.evaluate(()=>window.__audio.buffers.length),beforeMutedLoad,'Pending voice is canceled by mute');
-    note('Temporary round 3: 25 WAVs decode with nonzero unclipped signal; four-style playback/queue/Stop/shortlist and three widths pass. Apply-to-timer works; work/rest/complete play the mapped buffers in running AudioContext; four presets preview; preference and mute survive reload; slow pending voice is canceled by mute. Subjective emotion and timbre require user listening.');
+    note('Selected round 3: 25 WAVs decode with nonzero unclipped signal; historical four-style playback/queue/Stop/shortlist and three widths pass. Apply-to-timer works; work/rest/complete play the mapped buffers in running AudioContext; both selected presets preview; preference and mute survive reload; slow pending voice is canceled by mute. Subjective emotion and timbre require user listening.');
     await context.close();
   }
+  {
+    const {context,page}=await open({width:390,height:844},{touch:true,audioProbe:true});
+    await nav(page,'settings');assert.equal(await page.inputValue('#sound'),'chirrup','New visits default to E');
+    const manifest=JSON.parse(await readFile(resolve(root,'assets/sounds/manifest.json'),'utf8'));
+    const expected=await page.evaluate(async manifest=>{
+      const decoder=new OfflineAudioContext(1,44100,44100),durations={};
+      for(const [id,preset]of Object.entries(manifest.presets))for(const [event,asset]of Object.entries(preset.events)){
+        const response=await fetch('assets/sounds/'+asset.file);const buffer=await decoder.decodeAudioData(await response.arrayBuffer());
+        durations[id+'/'+event]=buffer.duration;
+      }
+      return durations;
+    },manifest);
+    for(const id of ['chirrup','breeze']){
+      await page.selectOption('#sound',id);
+      for(const [cue,event]of [['hello','greet'],['rise2','work'],['fall2','rest'],['cheer3','complete'],['call','reminder']]){
+        const before=await page.evaluate(()=>window.__audio.buffers.length);
+        await action(page,'preview-cue-'+cue);await page.waitForFunction(n=>window.__audio.buffers.length===n+1,before);
+        const actual=await page.evaluate(()=>window.__audio.buffers.at(-1));
+        assert.ok(Math.abs(actual.duration-expected[id+'/'+event])<.001,id+'/'+event+' maps to the selected clip');
+        assert.equal(actual.state,'running');assert.ok(actual.peak>.05);
+      }
+    }
+    await page.reload();await nav(page,'settings');assert.equal(await page.inputValue('#sound'),'breeze','G choice survives reload');
+    await action(page,'preview-cue-hello');await page.waitForFunction(()=>window.__audio.buffers.length===1);
+    await nav(page,'home');await action(page,'hello');await page.waitForFunction(()=>window.__audio.buffers.length===2);
+    assert.ok(Math.abs((await page.evaluate(()=>window.__audio.buffers.at(-1).duration))-expected['breeze/greet'])<.001);
+    await action(page,'go-reminders');await action(page,'preview-reminder');await page.waitForFunction(()=>window.__audio.buffers.length===3);
+    assert.ok(Math.abs((await page.evaluate(()=>window.__audio.buffers.at(-1).duration))-expected['breeze/reminder'])<.001);
+    await page.keyboard.press('Escape');await nav(page,'settings');await page.selectOption('#language','en');
+    assert.ok((await page.locator('#voice-description').textContent()).includes('Airy'));
+    await noOverflow(page,'selected voices phone settings');await capture(page,'selected-voices-phone-en');
+    await page.setViewportSize({width:320,height:740});await page.selectOption('#language','zh-CN');
+    await noOverflow(page,'selected voices 320 settings');await capture(page,'selected-voices-small-phone');
+    await page.setViewportSize({width:1280,height:900});await capture(page,'selected-voices-desktop');
+    assert.equal(await page.evaluate(()=>window.__audio.starts.length),0,'Chosen presets must not invoke the old oscillator cues');
+    await context.close();
+  }
+  for(const [stored,expected]of [['temp-chirrup','chirrup'],['temp-breeze','breeze'],['silent','silent'],['temp-coo','chirrup'],['temp-hum','chirrup'],['zibloo','chirrup']]){
+    const context=await browser.newContext({viewport:{width:390,height:844}});
+    await context.addInitScript(value=>localStorage.setItem('zibloo-prototype-sound',value),stored);
+    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(url+'/#settings');await page.locator('#sound').waitFor();
+    assert.equal(await page.inputValue('#sound'),expected,'Migrating '+stored);
+    await context.close();
+  }
+  note('Selected presets: default E, all 10 scene previews map to original files, G persists, greeting/reminder use G, Chinese/English settings fit 1280/390/320 widths, no old oscillator playback, old preferences migrate and explicit mute is preserved.');
   assert.deepEqual(errors, [], 'Browser runtime errors');
   note('No browser runtime errors observed.');
 } catch (error) {

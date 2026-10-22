@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "status": "temporary-sketches-not-selected",
+  "status": "selected-chirrup-and-breeze",
   "events": [
     {
       "id": "work",
@@ -31,7 +31,7 @@
       "description": "柔软的呼气接圆润咕声，尝试安静、靠近的陪伴感。",
       "tags": "轻呼吸 · 圆润 · 松弛",
       "color": "#5d8d7c",
-      "role": "临时合成草稿",
+      "role": "历史试听",
       "greeting": "audio/coo-greet.wav",
       "sequence": "audio/coo-sequence.wav",
       "clips": {
@@ -39,8 +39,7 @@
         "rest": "audio/coo-rest.wav",
         "complete": "audio/coo-complete.wav",
         "reminder": "audio/coo-reminder.wav"
-      },
-      "useUrl": "../../?voice=temp-coo#settings"
+      }
     },
     {
       "id": "chirrup",
@@ -49,7 +48,7 @@
       "description": "较轻亮的短啾接小段颤动，用不均匀的节奏尝试活泼感。",
       "tags": "短啾 · 弹性 · 灵巧",
       "color": "#539392",
-      "role": "临时合成草稿",
+      "role": "已选 · 原型预设",
       "greeting": "audio/chirrup-greet.wav",
       "sequence": "audio/chirrup-sequence.wav",
       "clips": {
@@ -58,7 +57,7 @@
         "complete": "audio/chirrup-complete.wav",
         "reminder": "audio/chirrup-reminder.wav"
       },
-      "useUrl": "../../?voice=temp-chirrup#settings"
+      "useUrl": "../../?voice=chirrup#settings"
     },
     {
       "id": "hum",
@@ -67,7 +66,7 @@
       "description": "从闭口的轻哼慢慢打开，尝试更沉稳、收敛的声音。",
       "tags": "轻哼 · 中音 · 克制",
       "color": "#9e865c",
-      "role": "临时合成草稿",
+      "role": "历史试听",
       "greeting": "audio/hum-greet.wav",
       "sequence": "audio/hum-sequence.wav",
       "clips": {
@@ -75,8 +74,7 @@
         "rest": "audio/hum-rest.wav",
         "complete": "audio/hum-complete.wav",
         "reminder": "audio/hum-reminder.wav"
-      },
-      "useUrl": "../../?voice=temp-hum#settings"
+      }
     },
     {
       "id": "breeze",
@@ -85,7 +83,7 @@
       "description": "带一点气息的轻鸣，起音和释放都更舒缓。",
       "tags": "轻鸣 · 气息 · 透明",
       "color": "#769b9b",
-      "role": "临时合成草稿",
+      "role": "已选 · 原型预设",
       "greeting": "audio/breeze-greet.wav",
       "sequence": "audio/breeze-sequence.wav",
       "clips": {
@@ -94,8 +92,12 @@
         "complete": "audio/breeze-complete.wav",
         "reminder": "audio/breeze-reminder.wav"
       },
-      "useUrl": "../../?voice=temp-breeze#settings"
+      "useUrl": "../../?voice=breeze#settings"
     }
   ],
-  "comparison": "audio/compare-greetings.wav"
+  "comparison": "audio/compare-greetings.wav",
+  "selectedPresets": [
+    "chirrup",
+    "breeze"
+  ]
 }

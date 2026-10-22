@@ -118,7 +118,7 @@ def save(file,x,report):
 
 def main():
     (ROOT/'audio').mkdir(parents=True,exist_ok=True)
-    m=dict(version=3,status='temporary-sketches-not-selected',events=[dict(id=i,name=n,intent=t)for i,n,t in EVENTS],styles=[])
+    m=dict(version=3,status='selected-chirrup-and-breeze',selectedPresets=['chirrup','breeze'],events=[dict(id=i,name=n,intent=t)for i,n,t in EVENTS],styles=[])
     report=[];greetings=[]
     for style in STYLES:
         id,number,name,desc,tags,color,*_=style;clips={};seq=[]
@@ -127,9 +127,9 @@ def main():
             if event=='greet':greetings.append(x)
             else:clips[event]='audio/'+file;seq.extend([x,silence(.45)])
         seqfile=f'{id}-sequence.wav';save(seqfile,np.concatenate(seq),report)
-        m['styles'].append(dict(id=id,number=number,name=name,description=desc,tags=tags,color=color,role='临时合成草稿',
+        m['styles'].append(dict(id=id,number=number,name=name,description=desc,tags=tags,color=color,role='已选 · 原型预设' if id in ['chirrup','breeze'] else '历史试听',
                                 greeting=f'audio/{id}-greet.wav',sequence='audio/'+seqfile,clips=clips,
-                                useUrl='../../?voice=temp-'+id+'#settings'))
+                                useUrl='../../?voice='+id+'#settings' if id in ['chirrup','breeze'] else ''))
     save('compare-greetings.wav',np.concatenate([part for x in greetings for part in[x,silence(.55)]]),report)
     m['comparison']='audio/compare-greetings.wav'
     (ROOT/'manifest.json').write_text(json.dumps(m,ensure_ascii=False,indent=2)+'\n')

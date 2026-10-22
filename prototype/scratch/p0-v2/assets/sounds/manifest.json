@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "default": "chirrup",
+  "selection": "User selected E 灵巧啾噜 and G 清透轻呼 for the prototype.",
+  "presets": {
+    "chirrup": {
+      "code": "E",
+      "name": "灵巧啾噜",
+      "events": {
+        "greet": {
+          "file": "chirrup/greet.wav",
+          "sha256": "ede87cc9ec554232929dcb47a092131047ea8a2a81928aedd6ecd1a0aa997b1a",
+          "source": "sound-lab/voice-round3/audio/chirrup-greet.wav"
+        },
+        "work": {
+          "file": "chirrup/work.wav",
+          "sha256": "0f500ea79beed8f440f434846a094c05c1fa92ffac0e86468fedfaea0cd9e88e",
+          "source": "sound-lab/voice-round3/audio/chirrup-work.wav"
+        },
+        "rest": {
+          "file": "chirrup/rest.wav",
+          "sha256": "51a5ffcd613442dbe97d3000a90fd234e85e1895269f46bf10303af921449ab2",
+          "source": "sound-lab/voice-round3/audio/chirrup-rest.wav"
+        },
+        "complete": {
+          "file": "chirrup/complete.wav",
+          "sha256": "d860d1cf332d60f5e528efda592cb7d4346a9a4489aa7e18e97bb9d5e290a4ac",
+          "source": "sound-lab/voice-round3/audio/chirrup-complete.wav"
+        },
+        "reminder": {
+          "file": "chirrup/reminder.wav",
+          "sha256": "5bb5765cf858a262f65a644993f22c8531940cc5843c0f0973dd5a5eb324e31c",
+          "source": "sound-lab/voice-round3/audio/chirrup-reminder.wav"
+        }
+      }
+    },
+    "breeze": {
+      "code": "G",
+      "name": "清透轻呼",
+      "events": {
+        "greet": {
+          "file": "breeze/greet.wav",
+          "sha256": "34151d0874a5c54ffe18e6e593155d6e24f0bc5be7ca87834a1f99308731eca6",
+          "source": "sound-lab/voice-round3/audio/breeze-greet.wav"
+        },
+        "work": {
+          "file": "breeze/work.wav",
+          "sha256": "98399a119db99584a95b42d20af74843c796c6ef177dc12c4a4bdb87414ba7e4",
+          "source": "sound-lab/voice-round3/audio/breeze-work.wav"
+        },
+        "rest": {
+          "file": "breeze/rest.wav",
+          "sha256": "9e9c6aa0b8cea29dada40e845b733fd37bd6eec9697df1c8f1b72c89843c386b",
+          "source": "sound-lab/voice-round3/audio/breeze-rest.wav"
+        },
+        "complete": {
+          "file": "breeze/complete.wav",
+          "sha256": "64a883a2b736442f92c595d0f7480aea988325d0630b7ea833628bdbc29e7dd0",
+          "source": "sound-lab/voice-round3/audio/breeze-complete.wav"
+        },
+        "reminder": {
+          "file": "breeze/reminder.wav",
+          "sha256": "56360f4074d9b9e1492c3060766854750c510a254eeb2eb8ae6b34f9fadabc24",
+          "source": "sound-lab/voice-round3/audio/breeze-reminder.wav"
+        }
+      }
+    }
+  }
+}

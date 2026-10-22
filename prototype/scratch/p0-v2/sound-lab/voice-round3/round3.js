@@ -113,7 +113,7 @@ async function init() {
     <div class="card-head"><div class="sound-icon" aria-hidden="true"><svg viewBox="0 0 36 36">${glyphs[i]}</svg></div><div><div class="number">VOICE ${s.number}</div><h3>${esc(s.name)}</h3></div><span class="role">${esc(s.role)}</span></div>
     <p class="description">${esc(s.description)}</p><p class="tags">${esc(s.tags)}</p>
     <div class="card-actions"><button class="greet" data-style="${s.id}" data-event="greet" aria-label="${s.name} · 打个招呼">▷ 打个招呼</button><button class="sequence" data-style="${s.id}" data-event="sequence" aria-label="完整试听 ${s.name}">▷ 四种语气</button><button class="favorite" data-favorite="${s.id}" aria-pressed="false" aria-label="收藏 ${s.name}">加入候选</button></div>
-    <div class="event-buttons">${manifest.events.map(e=>`<button data-style="${s.id}" data-event="${e.id}" aria-label="${s.name} · ${e.name}">${e.name}</button>`).join('')}</div><a class="use-voice" href="${s.useUrl}" aria-label="暂用 ${s.name}">在计时器中暂用 ↗</a>
+    <div class="event-buttons">${manifest.events.map(e=>`<button data-style="${s.id}" data-event="${e.id}" aria-label="${s.name} · ${e.name}">${e.name}</button>`).join('')}</div>${s.useUrl?`<a class="use-voice" href="${s.useUrl}" aria-label="使用 ${s.name}">使用这组声音 ↗</a>`:`<p class="tags" style="margin-top:18px">保留试听</p>`}
   </article>`).join('');
   shortlist();
   $('#compare-all').disabled=false;$('#copy-choice').disabled=false;
