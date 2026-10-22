@@ -11,3 +11,5 @@
 Artifacts：截图与 `observations.json`，保留 7 天。[本次运行已通过](https://github.com/kikoiio/Zibloo/actions/runs/39733464150)，验证提交 `0f48b64360e28d2e0b4f5f59e08513d2918a4bb2`。本机保存的[截图与检查记录](../review/p0-v2-2026-10-22/README.md)可继续用于用户评审。
 
 用户已否决首次验证中的手工重画角色与字标；当前检查已改为直接引用已选原图、无重画路径，并核对整体悬浮与静止。独立腕足动画待原稿分层后制作，不再声称已验证连续腕足动作。
+
+恢复版[运行已通过](https://github.com/kikoiio/Zibloo/actions/runs/39744898017)，提交 `e65808dddd22a4b837a54ddd7191aa26f1b26c18`。[当前截图与记录](../review/approved-originals-2026-10-22/README.md)。

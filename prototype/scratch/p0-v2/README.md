@@ -22,4 +22,4 @@
 
 ## 验证
 
-已确认原图文件一致并完成 JavaScript 语法检查；恢复版将在用户已授权的 GitHub Actions 中检查原图引用、布局、悬浮/静止和主要流程。上一版检查不能作为本版形象一致性验收。
+已确认原图文件一致并完成 JavaScript 语法检查；恢复版的[GitHub Actions 验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/39744898017)，覆盖原图文件校验、原图引用、四种宽度、悬浮/静止和主要流程。[恢复版截图与记录](../../review/approved-originals-2026-10-22/README.md)。上一版检查不能作为本版形象一致性验收。
