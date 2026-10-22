@@ -71,6 +71,8 @@ const copy = {
   '点一下，看看 Zibloo 的变化':'Tap to see Zibloo change',
   '点点我，打个招呼':'Tap me to say hello',
   '腕足会轻轻回应你':'A little wave, just for you',
+  '一点时间，一起度过。':'A little time, together.',
+  '慢慢来，Zibloo 在。':'Take your time. Zibloo is here.',
   '留一点时间，做喜欢的事。':'Make a little room for what you love.',
   '待机 · 自在悬游':'Idle · drifting gently',
   '训练 · 跟上你的节奏':'Training · at your pace',
@@ -130,7 +132,7 @@ function updateCharacter() {
     el.setAttribute('aria-label',`Zibloo ${t(moodNames[mood])}`);
   });
   const caption=$('#character-state-label');
-  if(caption)caption.textContent=t(moodNames[characterMood()]);
+  if(caption)caption.textContent=t(state.settings.reduced||reducedMotion.matches?'已减少动态效果':moodNames[characterMood()]);
   Zibloo.refresh();
 }
 
@@ -144,6 +146,8 @@ function render(focus = true) {
   shell.classList.toggle('reduced', state.settings.reduced);
   document.documentElement.classList.toggle('reduced-motion', state.settings.reduced);
   document.documentElement.lang = state.locale;
+  document.title=state.locale==='en'?'Zibloo · A little time, together':'Zibloo · 一起，慢慢来';
+  document.querySelectorAll('[data-copy]').forEach(el=>{el.textContent=t(el.dataset.copy);});
   nav();
   const pages = { home:homePage, training:trainingPage, focus:focusPage, reminders:remindersPage, timer:timerPage, history:historyPage, settings:settingsPage };
   main.innerHTML = (pages[state.page] || homePage)();
@@ -167,7 +171,7 @@ function homePage() {
     <section class="home-stage" aria-label="${t('小窝')}"><div class="ocean-floor"></div><span class="bubble one"></span><span class="bubble two"></span><span class="bubble three"></span><span class="bubble four"></span>
     <button class="mascot-main" data-action="hello" aria-label="${t('点点我，打个招呼')}">${image()}</button>
     ${modeEntry('training','训练','间歇与节奏')}${modeEntry('focus','专注','留一点安静')}${modeEntry('reminders','记事','到点叫你')}
-    <p class="character-caption">${t('点点我，打个招呼')}<small class="character-status" id="character-state-label">${t(moodNames[characterMood()])}</small>${state.settings.reduced||reducedMotion.matches?`<small>${t('已减少动态效果')}</small>`:''}</p></section>
+    <p class="character-caption">${t('点点我，打个招呼')}<small class="character-status" id="character-state-label">${t(state.settings.reduced||reducedMotion.matches?'已减少动态效果':moodNames[characterMood()])}</small></p></section>
     <section class="quick-section"><div class="section-heading"><h2>${t('只想计一小会儿')}</h2><span class="muted">${t('轻点即开始')}</span></div><div class="quick-options">${[1,3,5,10].map(n=>btn(`quick-${n}`,`<strong>${n}</strong><span>${unit('分钟')}</span>`,'quick-button',`aria-label="${n} ${unit('分钟')}"`)).join('')}</div></section>
     <a href="#history" data-page="history" class="companion-card"><span class="companion-icon">${icon('heart')}</span><div class="companion-copy"><h2>${t('今天的陪伴')}</h2><p>${t('一起度过了')}<strong>${Math.floor(state.history.filter(h=>!h.demo&&h.kind!=='reminder').reduce((sum,h)=>sum+h.seconds,0)/60)}</strong>${unit('分钟')}</p></div>${icon('chevron')}</a>
     <p class="demo-note">${t('示例数据，用于预览界面')}</p>`;
@@ -407,7 +411,7 @@ document.addEventListener('click',event=>{
 document.addEventListener('change',event=>{
   const el=event.target;
   if(el.id==='character-preview'){state.characterPreview=el.value;updateCharacter();}
-  if(el.id==='language'){state.locale=el.value;render(false);}
+  if(el.id==='language'){state.locale=el.value;clearTimeout(toastHandle);$('.toast').hidden=true;render(false);}
   if(el.id==='sound')state.settings.sound=el.value;
   if(el.id==='vibration')state.settings.vibration=el.value;
   if(el.id==='reminder-rule'){syncReminderForm();const r=state.dialog.reminder;r.rule=el.value;r.time=el.value==='at'?'':r.time.includes(':')&&r.time.length===5?r.time:'08:30';r.amount=el.value==='interval'?2:30;drawReminderDialog();}

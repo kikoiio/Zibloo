@@ -44,12 +44,22 @@ async function noOverflow(page, label) {
   const dimensions = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
   assert.ok(dimensions.scroll <= dimensions.width + 1, `${label}: horizontal overflow ${JSON.stringify(dimensions)}`);
 }
+async function clearCaption(page, label) {
+  const bounds=await page.evaluate(()=>{
+    const body=document.querySelector('.mascot-main .zibloo-body');
+    const box=body.getBBox(), matrix=body.getScreenCTM();
+    const bottom=Math.max(...[[box.x,box.y],[box.x+box.width,box.y],[box.x,box.y+box.height],[box.x+box.width,box.y+box.height]].map(([x,y])=>new DOMPoint(x,y).matrixTransform(matrix).y));
+    return {bottom,caption:document.querySelector('.character-caption').getBoundingClientRect().top};
+  });
+  assert.ok(bounds.bottom<=bounds.caption+1,`${label}: character overlaps caption ${JSON.stringify(bounds)}`);
+}
 
 try {
   browser = await chromium.launch({ headless: true, args: ['--disable-gpu'] });
   for (const [name, viewport] of [['desktop',{width:1280,height:900}],['tablet',{width:768,height:1024}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]) {
     const { context, page } = await open(viewport, { touch: viewport.width < 600 });
     await noOverflow(page, name);
+    await clearCaption(page,name);
     assert.equal(await page.locator('.mode-entry:visible').count(), 3);
     const entries = await page.locator('.mode-entry:visible').all();
     const boxes = await Promise.all(entries.map(entry => entry.boundingBox()));
@@ -77,6 +87,7 @@ try {
     const still = await path.getAttribute('d');
     await page.waitForTimeout(450);
     assert.equal(await path.getAttribute('d'), still, 'System reduced motion should stop deformation');
+    await clearCaption(page,'system reduced motion');
     await capture(page, 'reduced-motion-home');
     await page.emulateMedia({reducedMotion:'no-preference'});
     await page.keyboard.press('Tab');
@@ -187,6 +198,7 @@ try {
     const still = await arm.getAttribute('d');
     await page.waitForTimeout(450);
     assert.equal(await arm.getAttribute('d'),still);
+    await clearCaption(page,'English app reduced motion');
     await capture(page, 'phone-home-english');
     note('Reminders: weekly form survives redraw, create/edit/disable/delete/preview; English and app reduced motion work');
     await context.close();
