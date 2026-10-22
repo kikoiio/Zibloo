@@ -23,3 +23,5 @@ Artifacts：截图与 `observations.json`，保留 7 天。[本次运行已通�
 本次[声音验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/39748474988)，提交 `1788fd517b6ab3263eef7f280689fb85c8559e1e`；[截图和检查记录](../review/sound-exploration-2026-10-22/README.md)。
 
 第二轮叫名试听[最终云端检查通过](https://github.com/kikoiio/Zibloo/actions/runs/39751960844)，提交 `460780496667a3c36ef995e7cd89f2a7250c212e`；[截图与检查记录](../review/name-voice-round2-2026-10-22/README.md)。
+
+第三轮[临时声音与计时接入检查通过](https://github.com/kikoiio/Zibloo/actions/runs/39756434941)，提交 `0e7b0d513e220207b9136588b4f611d185f29842`；[截图与记录](../review/temporary-voices-2026-10-22/README.md)。

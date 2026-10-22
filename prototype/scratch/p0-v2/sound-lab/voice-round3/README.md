@@ -15,3 +15,5 @@
 播放映射：工作→work、休息→rest、完成→complete、日常提醒→reminder、点击角色→greet。播放前仍在真实开始/继续点击中启用 AudioContext；提前获取并解码小型 WAV。每次播放重新检查设置与训练阶段引导，取消过期的异步播放；静音立即停止当前临时叫声。原角色与 logo 保持原图。
 
 本机只作短小 DSP 运算和静态检查；浏览器验证继续使用已授权 GitHub Actions。技术检查不能替代听感、实体扬声器或安卓后台提醒验收。
+
+第三轮[临时声音与计时接入检查通过](https://github.com/kikoiio/Zibloo/actions/runs/39756434941)，提交 `0e7b0d513e220207b9136588b4f611d185f29842`；[截图与记录](../../../../review/temporary-voices-2026-10-22/README.md)。
