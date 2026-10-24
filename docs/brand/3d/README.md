@@ -53,3 +53,9 @@ MCP 当前不是必需项：模型、材质、渲染和 glTF 导出都由本地 
 ## 眼神与大幅动作研究 v7
 
 v6 的技术验证未解决活动度与表情的体验问题。继续查看[眼神与动作研究 v7](../../../prototype/scratch/blender-flow-v7/README.md)：主腕足重新设计抬举与展开姿势，逐段积分弯曲保持腕足长度，并以视线、眨眼、眯眼、闭合笑眼表达四种状态。预览页提供眼神特写和动作进度条；保留 v6 的立体体积与四种变色实验。[云端模型渲染](https://github.com/kikoiio/Zibloo/actions/runs/40053382966)与[最终网页检查](https://github.com/kikoiio/Zibloo/actions/runs/40054301740)通过；四组动作帧、眼神与侧面已目视复核。GLB 约 896 KiB，眼神包含在 GLB 的四组动作中。实际测量、原型边界与视觉观察见该原型说明。
+
+## 腕根与全身协调研究 v8
+
+用户对 v7 的后续反馈是八腕近端仍僵硬。继续查看[柔软腕根 v8](../../../prototype/scratch/blender-flow-v8/README.md)：腕根从第一段开始弯曲，附着点随软组织控制移动；躯干与腕足错拍协调，保留主动作与辅助动作的层次。托珠的末端保持任务位置，近端继续调整。[运动参考](octopus-motion-research.md)记录真实章鱼姿态图、肌肉结构研究，以及 Pixar 官方 Hank 概念画和制作访谈。
+
+[v8 云端模型检查](https://github.com/kikoiio/Zibloo/actions/runs/40056892443)与[最终网页检查](https://github.com/kikoiio/Zibloo/actions/runs/40057948773)通过，优化 GLB 约 955 KiB。四组动作共 64 张渲染帧、腕根近景、侧背面和手机画面已目视复核。近端活动有明显改善，背面交界褶痕和生产级根部拓扑仍待处理；动作风格仍需用户评审。

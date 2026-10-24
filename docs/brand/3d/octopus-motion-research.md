@@ -12,6 +12,8 @@
 
 ## 影视动画：Hank 的动作层次
 
+实际查看了 [Pixar 官方 Finding Dory 页面](https://www.pixar.com/finding-dory) 的 Hank 概念画和剧照（hank1–4）：腕足用不同方向的 S/J 弯曲组织姿势，有的托举物体、有的撑开、有的回卷；身体下缘与腕足形成连续轮廓，眼神承担主要表情。概念画的极端变形用于理解柔软性，不作为 Zibloo 造型复制目标。
+
 - [KSL 对监督动画师 Michael Stocker 的采访](https://www.ksl.com/article/news/entertainment/finding-dory-animator-reveals-the-most-difficult-character-hes-ever-worked-on/40251733)：早期每条触手都同时活动，画面过忙；后来每拍主要有两三条活动，让注意力留在眼睛。
 - [IndieWire 制作访谈](https://www.indiewire.com/awards/industry/finding-dory-hank-octopus-character-1201746594/)：无骨骼的柔软结构需要专门绑定；每腕有多个旋转控制、末端手势枢轴和裙边控制。
 - [The Hollywood Reporter 制作访谈](https://www.hollywoodreporter.com/movies/movie-news/finding-dory-how-reluctant-superhero-903872/)：先设计画面中的触手形状，再让三维腕足贴合，并补组织动力；Hank 常靠眼睛表达，持续活动的吸盘会抢走注意力。
