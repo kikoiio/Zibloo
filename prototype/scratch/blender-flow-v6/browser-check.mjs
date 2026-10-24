@@ -109,7 +109,7 @@ try {
     let body;const eyes=[];
     model.traverse(object=>{
       if(object.isSkinnedMesh&&object.geometry.attributes.position.count>5000)body=object;
-      if(object.isMesh&&/^eye(?:\.|$)/i.test(object.name)){
+      if(object.isMesh&&/^eye(?:[._]?\d+)?$/i.test(object.name)){
         const materials=Array.isArray(object.material)?object.material:[object.material];
         const vertexColors=object.geometry.attributes.color;
         eyes.push({name:object.name,colors:materials.map(material=>material.color?.toArray()||null),

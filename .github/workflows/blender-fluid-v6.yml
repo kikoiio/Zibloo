@@ -7,6 +7,12 @@ on:
       - 'prototype/scratch/blender-flow-v6/**'
       - '.github/workflows/blender-fluid-v6.yml'
   workflow_dispatch:
+    inputs:
+      rendered_run:
+        description: Reuse the rendered artifact from this run for viewer review
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
   actions: read
@@ -27,6 +33,7 @@ jobs:
         with:
           node-version: '24'
       - name: Install official Blender on the cloud runner
+        if: ${{ !inputs.rendered_run }}
         run: |
           mkdir -p "$TMPDIR" tools
           curl --fail --location --retry 2 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz -o tools/blender.tar.xz
@@ -39,11 +46,19 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1
       - name: Download previous volume reference
+        if: ${{ !inputs.rendered_run }}
         run: gh run download 40048894899 -R kikoiio/Zibloo -n blender-flow-v5 -D prototype/scratch/blender-flow-v6/previous
       - name: Build slender form, traveling bends, color controls and CPU previews
+        if: ${{ !inputs.rendered_run }}
         run: tools/blender-4.5.3-linux-x64/blender -b -t 2 --python-exit-code 1 --python prototype/scratch/blender-flow-v6/build.py
       - name: Render previous model at the same true side camera
+        if: ${{ !inputs.rendered_run }}
         run: tools/blender-4.5.3-linux-x64/blender -b -t 2 --python-exit-code 1 --python prototype/scratch/blender-flow-v6/render_baseline.py
+      - name: Reuse completed renders for viewer review
+        if: ${{ inputs.rendered_run }}
+        env:
+          RENDER_RUN: ${{ inputs.rendered_run }}
+        run: gh run download "$RENDER_RUN" -R kikoiio/Zibloo -n blender-flow-v6 -D prototype/scratch/blender-flow-v6/output
       - name: Package animation previews and standalone viewer
         working-directory: prototype/scratch/blender-flow-v6
         run: |
