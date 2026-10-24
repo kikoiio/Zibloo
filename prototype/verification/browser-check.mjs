@@ -115,10 +115,16 @@ try {
   {
     const { context, page } = await open({width:1280,height:900});
     const art = page.locator('.mascot-main .zibloo-art');
-    assert.equal(await art.getAttribute('data-source'),'approved-B2');
-    assert.equal(await art.getAttribute('viewBox'),'470 25 800 735');
-    assert.equal(await art.locator('image').getAttribute('href'),'assets/reference-B2.png');
-    assert.equal(await art.locator('image').count(),1,'Character should display a single unchanged B2 image');
+    assert.equal(await art.getAttribute('data-source'),'b2-frame-sequence');
+    assert.equal(await art.getAttribute('viewBox'),'0 0 800 735');
+    assert.deepEqual(await art.locator('image').evaluateAll(images=>images.map(image=>image.getAttribute('href'))),[
+      'assets/frames/stroke-a.png',
+      'assets/frames/stroke-b.png',
+      'assets/frames/stroke-c.png',
+      'assets/frames/stroke-d.png',
+      'assets/frames/greet.png',
+    ],'Character should display four aligned swim poses and one greeting pose');
+    assert.deepEqual(await art.locator('image').evaluateAll(images=>images.map(image=>image.dataset.frame)),['a','b','c','d','greet']);
     assert.equal(await art.locator('path').count(),0,'Character must display the approved original, not a redraw');
     assert.ok(await page.locator('[data-source="approved-C3"]').count()>0);
     assert.equal(await page.locator('[data-source="approved-C3"]').first().getAttribute('viewBox'),'180 70 1400 470');
@@ -154,8 +160,12 @@ try {
     await page.locator('.mascot-main').focus();
     await page.keyboard.press('Enter');
     await page.getByRole('status').getByText('你好呀，我是 Zibloo！').waitFor();
+    await page.locator('.mascot-main .live-zibloo.is-greeting').waitFor();
+    assert.equal(await page.locator('.mascot-main .zibloo-frame[data-frame=greet]').evaluate(el=>getComputedStyle(el).opacity),'1','Greeting should switch to the raised-tentacle pose');
     await capture(page, 'keyboard-greeting');
-    note('Approved B2/C3 originals display without redraw; 2D drift, quiet focus, press cancellation, reduced motion, and keyboard greeting work.');
+    await page.waitForFunction(()=>!document.querySelector('.mascot-main .live-zibloo').classList.contains('is-greeting'));
+    assert.equal(await page.locator('.mascot-main .zibloo-frame[data-frame=greet]').evaluate(el=>getComputedStyle(el).opacity),'0','Greeting pose should release back to the swim loop');
+    note('Approved B2/C3 originals display without redraw; five aligned 2D poses, quiet focus, press cancellation, reduced motion, and keyboard greeting work.');
     await context.close();
   }
 
@@ -173,12 +183,15 @@ try {
     await page.waitForTimeout(70);
     const during=await position();
     assert.notEqual(during,home,`${name}: pointing at water should move the character`);
-    assert.equal(await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).animationName),'b2-swim',`${name}: movement should use the swimming pose`);
+    assert.equal(await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).animationName),'b2-swim-bob',`${name}: movement should use the swimming pose`);
     assert.equal(await mover.evaluate(el=>getComputedStyle(el,'::before').animationName),'b2-wake',`${name}: movement should leave a short bubble wake`);
+    const activeFrame=()=>page.locator('.mascot-main .zibloo-frame').evaluateAll(frames=>frames.find(frame=>Number.parseFloat(getComputedStyle(frame).opacity)>.5)?.dataset.frame);
     const firstPose=await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).transform);
-    await page.waitForTimeout(130);
+    const firstFrame=await activeFrame();
+    await page.waitForTimeout(170);
     const nextPose=await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).transform);
     assert.notEqual(nextPose,firstPose,`${name}: the approved artwork should visibly change pose during a short swim`);
+    assert.notEqual(await activeFrame(),firstFrame,`${name}: the visible tentacle pose frame should advance during a short swim`);
     await page.waitForFunction(()=>Number.parseFloat(getComputedStyle(document.querySelector('.mascot-main'),'::before').opacity)>.1,{}, {timeout:1000});
     const beforeRetarget=await position();
     await page.mouse.click(right.x,right.y);
@@ -205,13 +218,15 @@ try {
     assert.equal(await mover.evaluate(el=>el.classList.contains('is-swimming')),false);
     assert.equal(await mover.evaluate(el=>getComputedStyle(el).transitionDuration),'0s');
     assert.equal(await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).animationName),'none');
+    assert.deepEqual(await page.locator('.mascot-main .zibloo-frame').evaluateAll(frames=>frames.map(frame=>getComputedStyle(frame).animationName)),['none','none','none','none','none']);
+    assert.equal(await activeFrame(),'a','Reduced motion should hold one readable static pose');
     assert.equal(await mover.evaluate(el=>getComputedStyle(el,'::before').animationName),'none');
     await clearCaption(page,`${name} reduced-motion movement`);
     await capture(page,`${name}-2d-swimming`);
     await nav(page,'settings');
     await nav(page,'home');
     await clearCaption(page,`${name} return home`);
-    note(`${name}: pointer/touch swimming, interruption, bounds, recenter, arrows, reduced motion, and scene remount work.`);
+    note(`${name}: pointer/touch swimming with changing tentacle frames, interruption, bounds, recenter, arrows, reduced motion, and scene remount work.`);
     await context.close();
   }
 

@@ -5,16 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f3f8f5">
   <title>Zibloo · 一起，慢慢来</title>
-  <link rel="icon" type="image/svg+xml" href="assets/zibloo-symbol.svg?v=b2-swim-2">
+  <link rel="icon" type="image/svg+xml" href="assets/zibloo-symbol.svg?v=b2-tentacle-frames-1">
   <link rel="stylesheet" href="styles.css?v=approved-1">
-  <link rel="stylesheet" href="mascot.css?v=b2-swim-4">
+  <link rel="stylesheet" href="mascot.css?v=b2-tentacle-frames-1">
   <link rel="stylesheet" href="refinement.css?v=selected-voices-1">
-  <script src="mascot.js?v=b2-swim-4" defer></script>
-  <script src="app.js?v=b2-swim-4" defer></script>
+  <link rel="preload" as="image" href="assets/frames/stroke-a.png">
+  <link rel="preload" as="image" href="assets/frames/stroke-b.png">
+  <link rel="preload" as="image" href="assets/frames/stroke-c.png">
+  <link rel="preload" as="image" href="assets/frames/stroke-d.png">
+  <link rel="preload" as="image" href="assets/frames/greet.png">
+  <script src="mascot.js?v=b2-tentacle-frames-1" defer></script>
+  <script src="app.js?v=b2-tentacle-frames-1" defer></script>
 </head>
 <body>
   <div class="review-bar" aria-label="原型评审工具">
-    <span class="prototype-badge">P0.2 <span>B2 角色 · C3 品牌 · 2D 状态动画</span></span>
+    <span class="prototype-badge">P0.2 <span>B2 角色 · C3 品牌 · 2D 姿态帧动画</span></span>
     <div class="review-character"><select id="character-preview" aria-label="角色状态预览"><option value="auto">随当前活动</option><option value="idle">自在悬游</option><option value="training">陪你训练</option><option value="focus">安静专注</option><option value="reminder">轻轻提醒</option><option value="celebrate">开心庆祝</option><option value="paused">安静等你</option></select></div>
     <a class="speed-button" href="sound-lab/voice-round3/index.html">声音试听 ↗</a>
     <button class="speed-button" id="speed-toggle" aria-pressed="false" title="以 30 倍速度体验计时流程">加速体验 <span>关</span></button>

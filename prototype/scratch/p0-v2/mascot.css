@@ -1,15 +1,25 @@
 .live-zibloo{display:inline-block;position:relative;width:100%;aspect-ratio:800/735;line-height:0;user-select:none;vertical-align:middle;transition:transform .2s ease}
 .zibloo-art{display:block;width:100%;height:100%;pointer-events:none}
 .approved-source{pointer-events:none}
+.zibloo-frame{opacity:0;pointer-events:none}
+.zibloo-frame[data-frame=a]{opacity:1}
 
-/* B2 原图状态动画:不改原图,只对整图做 transform 表达状态 */
-.zibloo-art{animation:b2-idle 7s ease-in-out infinite}
-.live-zibloo[data-mood=training] .zibloo-art{animation:b2-training 4s ease-in-out infinite}
-.live-zibloo[data-mood=focus] .zibloo-art{animation:none}
-.live-zibloo[data-mood=paused] .zibloo-art{animation:none}
-.live-zibloo[data-mood=reminder] .zibloo-art{animation:b2-reminder 5.5s ease-in-out infinite}
-.live-zibloo[data-mood=celebrate] .zibloo-art{animation:b2-celebrate 1.6s cubic-bezier(.34,1.4,.4,1) 2}
+/* 腕足姿态帧负责表演；身体只做很轻的悬浮，避免整图摆动冒充动作。 */
+.zibloo-art{--frame-duration:1.55s;animation:b2-float 6.5s ease-in-out infinite}
+.zibloo-frame[data-frame=a]{animation:zibloo-frame-a var(--frame-duration) steps(1,end) infinite}
+.zibloo-frame[data-frame=b]{animation:zibloo-frame-b var(--frame-duration) steps(1,end) infinite}
+.zibloo-frame[data-frame=c]{animation:zibloo-frame-c var(--frame-duration) steps(1,end) infinite}
+.zibloo-frame[data-frame=d]{animation:zibloo-frame-d var(--frame-duration) steps(1,end) infinite}
+.live-zibloo[data-mood=training] .zibloo-art{--frame-duration:1.05s;animation:b2-training 4.8s ease-in-out infinite}
+.live-zibloo[data-mood=focus] .zibloo-art,.live-zibloo[data-mood=paused] .zibloo-art{animation:none}
+.live-zibloo[data-mood=focus] .zibloo-frame,.live-zibloo[data-mood=paused] .zibloo-frame{animation:none}
+.live-zibloo[data-mood=focus] .zibloo-frame[data-frame=a],.live-zibloo[data-mood=paused] .zibloo-frame[data-frame=a]{opacity:1}
+.live-zibloo[data-mood=reminder] .zibloo-art{--frame-duration:1.35s;animation:b2-reminder 5.5s ease-in-out infinite}
+.live-zibloo[data-mood=celebrate] .zibloo-art{--frame-duration:.48s;animation:b2-celebrate 1.6s cubic-bezier(.34,1.4,.4,1) 2}
 .live-zibloo.is-greeting .zibloo-art{animation:b2-greet 1.3s ease-in-out}
+.live-zibloo.is-greeting .zibloo-frame{animation:none;opacity:0}
+.live-zibloo.is-greeting .zibloo-frame[data-frame=greet]{opacity:1}
+.mascot-main.is-swimming .zibloo-frame{animation-duration:.58s}
 .live-zibloo.is-pressed{transform:translateY(2px) scale(.985)}
 
 .brand-image{display:block;width:170px;height:auto;max-width:100%}
@@ -28,7 +38,7 @@
 .swim-area{position:absolute;inset:0 0 50px;width:100%;cursor:crosshair;z-index:0}
 .home-stage .mascot-main{transition-property:translate;transition-timing-function:cubic-bezier(.25,.1,.25,1)}
 .mascot-main>.live-zibloo{rotate:var(--swim-lean,0deg);transition:rotate .2s ease}
-.mascot-main.is-swimming .zibloo-art{animation:b2-swim .68s ease-in-out infinite}
+.mascot-main.is-swimming .zibloo-art{animation:b2-swim-bob .78s ease-in-out infinite}
 .mascot-main.is-swimming:before,.mascot-main.is-swimming:after{content:"";position:absolute;z-index:0;border:2px solid #69a9a0;border-radius:50%;background:#e6f5f0;opacity:0;pointer-events:none;animation:b2-wake .86s ease-out infinite}
 .mascot-main.is-swimming:before{width:13px;height:13px;left:27%;bottom:23%}
 .mascot-main.is-swimming:after{width:9px;height:9px;left:20%;bottom:19%;animation-delay:.22s}
@@ -37,18 +47,17 @@
 .swim-reset{padding:2px 5px;color:var(--brand-dark);font-size:inherit;text-decoration:underline;text-underline-offset:3px}
 .ocean-floor{pointer-events:none}
 
-@keyframes b2-idle{
-  0%,100%{transform:translateY(0) rotate(0deg)}
-  25%{transform:translateY(-6px) rotate(-1.4deg)}
-  50%{transform:translateY(-9px) rotate(0deg)}
-  75%{transform:translateY(-6px) rotate(1.2deg)}
+@keyframes zibloo-frame-a{0%,24.99%{opacity:1}25%,100%{opacity:0}}
+@keyframes zibloo-frame-b{0%,24.99%{opacity:0}25%,49.99%{opacity:1}50%,100%{opacity:0}}
+@keyframes zibloo-frame-c{0%,49.99%{opacity:0}50%,74.99%{opacity:1}75%,100%{opacity:0}}
+@keyframes zibloo-frame-d{0%,74.99%{opacity:0}75%,100%{opacity:1}}
+@keyframes b2-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-7px)}
 }
-@keyframes b2-swim{
-  0%,100%{transform:translateY(1px) rotate(0deg) scale(1)}
-  18%{transform:translateY(-12px) rotate(-4.5deg) scale(1.025,.985)}
-  42%{transform:translateY(2px) rotate(1deg) scale(.985,1.025)}
-  66%{transform:translateY(-10px) rotate(5deg) scale(1.025,.99)}
-  86%{transform:translateY(1px) rotate(-2deg) scale(.99,1.015)}
+@keyframes b2-swim-bob{
+  0%,100%{transform:translateY(1px)}
+  50%{transform:translateY(-4px)}
 }
 @keyframes b2-wake{
   0%{opacity:0;transform:translate(0,0) scale(.65)}
@@ -81,6 +90,8 @@
 .reduced-motion .live-zibloo,.system-reduced-motion .live-zibloo{transition:none;transform:none}
 .reduced-motion .mascot-main:before,.reduced-motion .mascot-main:after,.system-reduced-motion .mascot-main:before,.system-reduced-motion .mascot-main:after{animation:none!important}
 .reduced-motion .live-zibloo *,.system-reduced-motion .live-zibloo *{animation:none!important;transition:none!important}
+.reduced-motion .zibloo-frame,.system-reduced-motion .zibloo-frame{opacity:0!important}
+.reduced-motion .zibloo-frame[data-frame=a],.system-reduced-motion .zibloo-frame[data-frame=a]{opacity:1!important}
 .reduced-motion .mascot-main,.system-reduced-motion .mascot-main,.document-hidden .mascot-main{transition:none!important}
 .reduced-motion .mascot-main>.live-zibloo,.system-reduced-motion .mascot-main>.live-zibloo{rotate:none;transition:none}
 .document-hidden .live-zibloo *{animation-play-state:paused!important}

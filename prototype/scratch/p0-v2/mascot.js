@@ -2,9 +2,14 @@
   let serial = 0;
   const safe = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const paperMask = id => `<filter id="${id}" color-interpolation-filters="sRGB"><feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 -1 0 0 1" result="paper"/><feComponentTransfer in="paper" result="ink"><feFuncA type="discrete" tableValues="0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"/></feComponentTransfer><feComposite in="SourceGraphic" in2="ink" operator="in"/></filter>`;
+  const swimFrames = ['stroke-a','stroke-b','stroke-c','stroke-d'];
   function svg({label='Zibloo',symbol=false}={}) {
-    const id=`approved-art-${++serial}`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" class="zibloo-art approved-art" viewBox="${symbol?'20 115 420 390':'470 25 800 735'}" role="img" aria-label="${safe(label)}" data-source="approved-B2"><defs>${paperMask(id)}</defs><image class="approved-source" filter="url(#${id})" href="assets/reference-B2.png" x="0" y="0" width="2025" height="776"/></svg>`;
+    if(symbol) {
+      const id=`approved-art-${++serial}`;
+      return `<svg xmlns="http://www.w3.org/2000/svg" class="zibloo-art approved-art" viewBox="20 115 420 390" role="img" aria-label="${safe(label)}" data-source="approved-B2"><defs>${paperMask(id)}</defs><image class="approved-source" filter="url(#${id})" href="assets/reference-B2.png" x="0" y="0" width="2025" height="776"/></svg>`;
+    }
+    const frames = swimFrames.map((name,index)=>`<image class="zibloo-frame" data-frame="${'abcd'[index]}" opacity="${index===0?1:0}" href="assets/frames/${name}.png" x="0" y="0" width="800" height="735"/>`).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="zibloo-art frame-sequence" viewBox="0 0 800 735" role="img" aria-label="${safe(label)}" data-source="b2-frame-sequence">${frames}<image class="zibloo-frame" data-frame="greet" opacity="0" href="assets/frames/greet.png" x="0" y="0" width="800" height="735"/></svg>`;
   }
   function logo(className='brand-image') {
     const id=`approved-lockup-${++serial}`;
