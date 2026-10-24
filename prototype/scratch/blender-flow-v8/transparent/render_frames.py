@@ -9,15 +9,18 @@ SOURCE = ROOT / 'output' / 'zibloo_flow_v8.blend'
 OUT = HERE / 'frames'
 OUT.mkdir(parents=True, exist_ok=True)
 
-# The archived blend contains studio backdrops and a floor used in earlier reviews.
+# Keep only the character rig family, lights, and camera visible. The archived
+# review scene includes unnamed studio geometry that otherwise blocks alpha.
+character_prefixes = ('Zibloo_', 'Source_', 'Eye_', 'HappyEye_', 'Key', 'Fill', 'Rim')
 for item in bpy.data.objects:
-    if item.type in {'MESH', 'FONT'} and item.name.lower() in {
-        'backdrop', 'floor', 'ground', 'background', 'studio_floor'
-    }:
-        item.hide_render = True
+    keep = item.type in {'LIGHT', 'CAMERA', 'ARMATURE'} or item.name.startswith(character_prefixes)
+    item.hide_render = not keep
+    item.hide_viewport = not keep
 
 scene = bpy.context.scene
-scene.render.engine = 'BLENDER_EEVEE_NEXT'
+scene.render.engine = 'CYCLES'
+scene.cycles.device = 'CPU'
+scene.cycles.samples = 16
 scene.render.resolution_x = scene.render.resolution_y = 640
 scene.render.resolution_percentage = 100
 scene.render.film_transparent = True
@@ -26,6 +29,8 @@ scene.render.image_settings.color_mode = 'RGBA'
 scene.render.image_settings.color_depth = '8'
 scene.view_settings.view_transform = 'Standard'
 scene.render.fps = 16
+scene.render.threads_mode = 'FIXED'
+scene.render.threads = 2
 
 camera = scene.camera
 if camera is None:
