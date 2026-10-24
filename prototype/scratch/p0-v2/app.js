@@ -70,6 +70,9 @@ const copy = {
   '今天也一起，慢慢来。':'A little time, together.', '你好呀，我是 Zibloo！':'Hello, I’m Zibloo!',
   '点一下，看看 Zibloo 的变化':'Tap to see Zibloo change',
   '点点我，打个招呼':'Tap me to say hello',
+  '点空白处游过去 · 点我打招呼':'Tap the water to move · tap me to say hello',
+  '返回中间':'Recenter',
+  '让 Zibloo 游过去；方向键移动，Home 返回中间':'Move Zibloo here; use arrow keys to move and Home to recenter',
   '腕足会轻轻回应你':'A little wave, just for you',
   '一点时间，一起度过。':'A little time, together.',
   '慢慢来，Zibloo 在。':'Take your time. Zibloo is here.',
@@ -162,6 +165,7 @@ let pendingCue=0,activeVoiceCue;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function updateCharacter() {
   document.querySelectorAll('.live-zibloo').forEach(el => {
+    el.classList.add('approved-preview');
     const mood=characterMood(el.dataset.characterState);
     el.dataset.mood=mood;
     el.setAttribute('aria-label',`Zibloo ${t(moodNames[mood])}`);
@@ -204,10 +208,10 @@ function homePage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好';
   return `${Zibloo.logo('mobile-brand')}<header class="page-header"><div><p class="greeting">${icon('sun')}${t(greeting)}</p><h1>${t('今天，想一起做点什么？')}</h1></div>${btn('go-settings',icon('settings'),'avatar-button',`aria-label="${t('设置')}"`)}</header><p class="home-intro">${t('留一点时间，做喜欢的事。')}</p>
-    <section class="home-stage" aria-label="${t('小窝')}"><div class="ocean-floor"></div><span class="bubble one"></span><span class="bubble two"></span><span class="bubble three"></span><span class="bubble four"></span>
+    <section class="home-stage" aria-label="${t('小窝')}"><button class="swim-area" aria-label="${t('让 Zibloo 游过去；方向键移动，Home 返回中间')}" aria-describedby="swim-hint"></button><div class="ocean-floor"></div><span class="bubble one"></span><span class="bubble two"></span><span class="bubble three"></span><span class="bubble four"></span>
     <button class="mascot-main" data-action="hello" aria-label="${t('点点我，打个招呼')}">${image()}</button>
     ${modeEntry('training','训练','间歇与节奏')}${modeEntry('focus','专注','留一点安静')}${modeEntry('reminders','记事','到点叫你')}
-    <p class="character-caption">${t('点点我，打个招呼')}<small class="character-status" id="character-state-label">${t(state.settings.reduced||reducedMotion.matches?'已减少动态效果':moodNames[characterMood()])}</small></p></section>
+    <div class="character-caption"><span class="caption-actions"><span id="swim-hint">${t('点空白处游过去 · 点我打招呼')}</span><button class="swim-reset">${t('返回中间')}</button></span><small class="character-status" id="character-state-label">${t(state.settings.reduced||reducedMotion.matches?'已减少动态效果':moodNames[characterMood()])}</small></div></section>
     <section class="quick-section"><div class="section-heading"><h2>${t('只想计一小会儿')}</h2><span class="muted">${t('轻点即开始')}</span></div><div class="quick-options">${[1,3,5,10].map(n=>btn(`quick-${n}`,`<strong>${n}</strong><span>${unit('分钟')}</span>`,'quick-button',`aria-label="${n} ${unit('分钟')}"`)).join('')}</div></section>
     <a href="#history" data-page="history" class="companion-card"><span class="companion-icon">${icon('heart')}</span><div class="companion-copy"><h2>${t('今天的陪伴')}</h2><p>${t('一起度过了')}<strong>${Math.floor(state.history.filter(h=>!h.demo&&h.kind!=='reminder').reduce((sum,h)=>sum+h.seconds,0)/60)}</strong>${unit('分钟')}</p></div>${icon('chevron')}</a>
     <p class="demo-note">${t('示例数据，用于预览界面')}</p>`;

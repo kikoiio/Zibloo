@@ -118,14 +118,24 @@ try {
     assert.equal(await art.getAttribute('data-source'),'approved-B2');
     assert.equal(await art.getAttribute('viewBox'),'470 25 800 735');
     assert.equal(await art.locator('image').getAttribute('href'),'assets/reference-B2.png');
+    assert.equal(await art.locator('image').count(),1,'Character should display a single unchanged B2 image');
     assert.equal(await art.locator('path').count(),0,'Character must display the approved original, not a redraw');
     assert.ok(await page.locator('[data-source="approved-C3"]').count()>0);
     assert.equal(await page.locator('[data-source="approved-C3"]').first().getAttribute('viewBox'),'180 70 1400 470');
     assert.equal(await page.locator('[data-source="approved-C3"]').first().locator('image').getAttribute('href'),'assets/reference-C3.png');
     const transform=()=>art.evaluate(node=>getComputedStyle(node).transform);
+    const stage=page.locator('.mascot-main .live-zibloo');
+    assert.equal(await page.locator('canvas').count(),0,'The 2D prototype should not create a WebGL canvas');
     const first = await transform();
     await page.waitForTimeout(550);
-    assert.notEqual(await transform(), first, 'The approved character should drift gently');
+    assert.notEqual(await transform(), first, 'The approved B2 character should drift gently');
+    const relaxed=await stage.evaluate(node=>getComputedStyle(node).transform);
+    await stage.dispatchEvent('pointerdown',{pointerType:'mouse'});
+    await page.waitForTimeout(250);
+    assert.notEqual(await stage.evaluate(node=>getComputedStyle(node).transform),relaxed,'Press should give gentle 2D feedback');
+    await stage.dispatchEvent('pointerleave',{pointerType:'mouse'});
+    await page.waitForTimeout(250);
+    assert.equal(await stage.evaluate(node=>getComputedStyle(node).transform),relaxed,'Cancelled press should reset feedback');
     await page.selectOption('#character-preview', 'focus');
     const quiet = await transform();
     await page.waitForTimeout(450);
@@ -145,7 +155,52 @@ try {
     await page.keyboard.press('Enter');
     await page.getByRole('status').getByText('你好呀，我是 Zibloo！').waitFor();
     await capture(page, 'keyboard-greeting');
-    note('Approved B2 source displayed without redraw; C3 original logo displayed; gentle drift stops during focus/reduced motion; keyboard greeting works. Independent arm animation is deferred.');
+    note('Approved B2/C3 originals display without redraw; 2D drift, quiet focus, press cancellation, reduced motion, and keyboard greeting work.');
+    await context.close();
+  }
+
+  for (const [name,viewport] of [['desktop',{width:1280,height:900}],['phone',{width:390,height:844}],['small-phone',{width:320,height:740}]]) {
+    const {context,page}=await open(viewport,{touch:viewport.width<600});
+    const mover=page.locator('.mascot-main');
+    const area=page.locator('.swim-area');
+    const position=()=>mover.evaluate(el=>getComputedStyle(el).translate);
+    const home=await position();
+    // Hit the water near the stage edge, away from the character and mode buttons.
+    const water=await area.boundingBox();
+    const left={x:water.x+4,y:water.y+4},right={x:water.x+water.width-4,y:water.y+4};
+    if(viewport.width<600)await page.touchscreen.tap(left.x,left.y);
+    else await page.mouse.click(left.x,left.y);
+    await page.waitForTimeout(70);
+    const during=await position();
+    assert.notEqual(during,home,`${name}: pointing at water should move the character`);
+    await page.mouse.click(right.x,right.y);
+    const retargeted=await position();
+    const coords=value=>value.split(' ').map(parseFloat);
+    assert.ok(Math.abs(coords(during)[0]-coords(retargeted)[0])<12,`${name}: changing destination should not jump to the old endpoint`);
+    await page.waitForFunction(()=>!document.querySelector('.mascot-main').classList.contains('is-swimming'));
+    await clearCaption(page,`${name} after swimming`);
+    await noOverflow(page,`${name} after swimming`);
+    const bounds=await mover.boundingBox(),scene=await page.locator('.home-stage').boundingBox();
+    assert.ok(bounds.x>=scene.x&&bounds.x+bounds.width<=scene.x+scene.width+1,`${name}: swimming should stay inside the stage`);
+    await page.locator('.swim-reset').click();
+    await page.waitForFunction(()=>!document.querySelector('.mascot-main').classList.contains('is-swimming'));
+    assert.equal(await position(),home,`${name}: recenter should return to the initial position`);
+    await mover.focus();
+    await page.keyboard.press('ArrowLeft');
+    assert.notEqual(await position(),home,`${name}: keyboard movement should work`);
+    await page.keyboard.press('Home');
+    assert.equal(await position(),home,`${name}: keyboard Home should recenter`);
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await area.focus();
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await mover.evaluate(el=>el.classList.contains('is-swimming')),false);
+    assert.equal(await mover.evaluate(el=>getComputedStyle(el).transitionDuration),'0s');
+    await clearCaption(page,`${name} reduced-motion movement`);
+    await capture(page,`${name}-2d-swimming`);
+    await nav(page,'settings');
+    await nav(page,'home');
+    await clearCaption(page,`${name} return home`);
+    note(`${name}: pointer/touch swimming, interruption, bounds, recenter, arrows, reduced motion, and scene remount work.`);
     await context.close();
   }
 
