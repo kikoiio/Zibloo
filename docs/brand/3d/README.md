@@ -49,3 +49,7 @@ MCP 当前不是必需项：模型、材质、渲染和 glTF 导出都由本地 
 最新查看[灵动与变色 v6](../../../prototype/scratch/blender-flow-v6/README.md)：触手中后段收细、主腕足拉长，12 段骨链驱动逐段传递且彼此错开的弯曲；保留饱满的侧面体积。默认青碧以外，新增沙色、赤褐、墨棕与局部渐变演示；[章鱼颜色资料](octopus-color-research.md)区分物种证据和风格化配色。
 
 [最终云端检查](https://github.com/kikoiio/Zibloo/actions/runs/40051440950)及目视复核完成，四动作、配色与渐变交互、侧面及手机检查通过。GLB 约 975 KiB，包含基础青碧与四组动作；动态变色由评审页驱动，Blender 工程另有 `skin_stage` 可编辑控制。该版本继续作为造型与运动原型评审。
+
+## 眼神与大幅动作研究 v7
+
+v6 的技术验证未解决活动度与表情的体验问题。继续查看[眼神与动作研究 v7](../../../prototype/scratch/blender-flow-v7/README.md)：主腕足重新设计抬举与展开姿势，逐段积分弯曲保持腕足长度，并以视线、眨眼、眯眼、闭合笑眼表达四种状态。预览页提供眼神特写和动作进度条；保留 v6 的立体体积与四种变色实验。[云端模型渲染](https://github.com/kikoiio/Zibloo/actions/runs/40053382966)与[最终网页检查](https://github.com/kikoiio/Zibloo/actions/runs/40054301740)通过；四组动作帧、眼神与侧面已目视复核。GLB 约 896 KiB，眼神包含在 GLB 的四组动作中。实际测量、原型边界与视觉观察见该原型说明。
