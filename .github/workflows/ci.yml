@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches: [codex/prototype-b2-c3]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Type check (svelte-check)
+        run: npm run check
+      - name: Unit & property tests
+        run: npm test
+      - name: Static build
+        run: npm run build

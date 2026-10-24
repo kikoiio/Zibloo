@@ -1,6 +1,6 @@
 # Zibloo Timer A0 架构定稿
 
-> 状态:**渲染方向已更新**(2026-10-24 用户改为基于已选 2D 原图制作动画;覆盖此前 3D 帧序列决定,详见 §8)
+> 状态:**已定稿并经用户确认,进入 P1**(2026-10-24;渲染同日更新为基于已选 2D 原图的五姿态帧方案,详见 §8)
 > 需求基线:`docs/PRD.md` v0.2 · 产出方式:4 候选并行探索 + 独立交叉评审 + 综合
 > 候选存档:`docs/arch/a0-candidates/`(opus / fable / sonnet / haiku)
 
@@ -24,7 +24,7 @@
 | 决策点 | 结论 | 关键理由 |
 |---|---|---|
 | 前端框架 | **Svelte 5 + SvelteKit(static adapter)** | 主页是常驻动画角色,细粒度响应式让「app state → Zibloo 表现」的纯映射直接成为 store 驱动的组件;一套代码出静态站点(网页版)与 Capacitor webview 包(Android)。React 为接近平手的备选(范例密度更高),记录在 Tradeoffs。 |
-| Zibloo 渲染 | **已选 B2/C3 的 2D 原图 + CSS 位移与状态动画** | 使用原图的显示窗口,保持字形、比例、轮廓;角色整图悬浮、轻转、点按回应。屏幕位置与角色动作分开,连续点击可改向;专注/暂停静止,减少动态效果直接切换位置。当前不依赖模型、骨骼或预渲染帧。 |
+| Zibloo 渲染 | **B2 五姿态帧 + 整图轻悬浮的 2D 动画** | 以 B2 原图为基准的五张对齐姿态帧(四帧划水循环 + 一帧抬爪)已作为 P1 应用资产;整图只做悬浮与位移,专注/暂停静止,减少动态效果直接切换位置。不使用模型、骨骼或 3D 渲染。 |
 | 壳层 | **Capacitor 6(仅 Android)+ 自写薄 Kotlin 插件** | §4.1 三条可靠性对应三个系统机制(AlarmManager 精确闹钟 / ForegroundService / BOOT_COMPLETED 广播),Web 栈一个都给不了,插件生态也覆盖不到——自写约 300–400 行 Kotlin 是需求的自然形状,不是被 Capacitor 限制。 |
 | 原生可靠性层 | **单插件 `zibloo-alarms`**:`AlarmScheduler`(`setAlarmClock`/`setExactAndAllowWhileIdle` + 权限)、`BootReceiver`(`BOOT_COMPLETED` + `MY_PACKAGE_REPLACED`)、`TimerForegroundService`、`ReminderStore`(SharedPreferences JSON 闹钟载荷镜像) | 最高优先级需求不交给第三方维护节奏;铃声由原生 MediaPlayer 播放(资源随 APK 打包,App 已死也响)。 |
 | 状态管理 | **Svelte 5 runes 模块化 store**,无全局状态库 | 状态量小;引入 Redux/Zustand 是接口深度负收益。 |
@@ -173,7 +173,7 @@ export function evaluateUnlocks(progress: UnlockProgress, prev: UnlockState): Un
 ## 7. 开放问题(承接 PRD §9,标注归属)
 
 1. ~~A0 渲染选型~~ → **已更新(2026-10-24)**:2D 原图动画路线,见 §8
-2. P1 状态表先以整图动画表达;独立眨眼或腕足动作需额外素材和用户认可,当前不作为 P0 前置。
+2. ~~P1 状态表先以整图动画表达~~ → 已更新(2026-10-24):采用五姿态帧表达状态;独立眨眼或更多腕足动作需额外素材和用户认可,不作为 P1 前置。
 3. `SCHEDULE_EXACT_ALARM` vs `USE_EXACT_ALARM`(后者免授权但上架审核严;P1 不上架倾向前者 + 引导,待用户拍板)
 4. 闹钟响铃时长/循环策略(原生 MediaPlayer,默认 15s?待定)
 5. 网页版是否投入 Service Worker(首版倾向不做,仅前台可用 + 数据导出互通)
@@ -199,6 +199,6 @@ export function evaluateUnlocks(progress: UnlockProgress, prev: UnlockState): Un
 
 ### 历史与当前下一步
 
-2026-10-21 用户否决旧原型;2026-10-22 选定 B2/C3;2026-10-24 从 3D 帧序列转向 2D 原图动画。当前继续完成 P0 视觉与操作原型,由用户确认体验后再进入生产实现。3D 模型、渲染工作流与相关参考已清理。
+2026-10-21 用户否决旧原型;2026-10-22 选定 B2/C3;2026-10-24 从 3D 帧序列转向 2D 原图动画,同日五姿态帧方案通过云端验证,用户确认后 **P0 原型退役删除**,验证记录保留在 `prototype/review/`,姿态帧、C3 字标与 E/G 声音迁移至应用静态资产。
 
-后续进入 P1 时,建议先实现 `core/timer` 纯函数(`startSession / projectSession / resume`)+ 属性测试(任意暂停/恢复序列零漂移、后台跨多段一次投影正确);这是后续技术建议,不是当前执行阶段。
+**P1 已启动(2026-10-24)**:脚手架按 §3 模块地图落地于仓库根目录;首个实现目标即本节建议的 `core/timer` 纯函数(`startSession / projectSession / pause / resume / skip`)+ 属性测试(任意暂停/恢复序列零漂移、后台跨多段一次投影正确),随后 `core/reminders`、`core/zibloo` 映射与 UI 壳。

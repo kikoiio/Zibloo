@@ -1,5 +1,8 @@
+node_modules/
+.svelte-kit/
+build/
+dist/
 .run/
 .tmp/
-node_modules/
 artifacts/
 .DS_Store
