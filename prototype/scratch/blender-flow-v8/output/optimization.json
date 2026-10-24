@@ -1,0 +1,24 @@
+{
+  "source_bytes": 2479248,
+  "optimized_bytes": 977900,
+  "codec": "EXT_meshopt_compression",
+  "animation_tolerance": 0.0001,
+  "animations": [
+    {
+      "name": "Celebrate",
+      "channels": 312
+    },
+    {
+      "name": "Focus",
+      "channels": 312
+    },
+    {
+      "name": "Greeting",
+      "channels": 312
+    },
+    {
+      "name": "Idle",
+      "channels": 312
+    }
+  ]
+}

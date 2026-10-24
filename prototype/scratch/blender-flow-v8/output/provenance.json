@@ -1,0 +1,25 @@
+{
+  "repository": "kikoiio/Zibloo",
+  "branch": "codex/blender-flow-v2",
+  "render_run": 40056892443,
+  "model_commit": "645c9c69282287385d21c8225b2384d579b93188",
+  "downloaded_at": "2026-10-24T03:18:02.623853+00:00",
+  "files": {
+    "zibloo_flow_v8.blend": {
+      "bytes": 21631499,
+      "sha256": "2d7f479cd523b3e607bc6056222e267d903aaf01a0222420264e4ff07ba404b2"
+    },
+    "zibloo_flow_v8.glb": {
+      "bytes": 977900,
+      "sha256": "1917ac209dcb7c734909be19d38497b69750750b165a3e2023e67ca344d6585d"
+    },
+    "zibloo_flow_v8_source.glb": {
+      "bytes": 2479248,
+      "sha256": "412e4cd6c85e8621e1b6a6469a659b87032a31fac8213e611c3b2db9c7da9f9b"
+    }
+  },
+  "local_composition": "Four frame contact sheets, review montages and v7/v8 exported base-direction comparison; model, render, browser captures and synchronized motion-comparison GIF ran in GitHub Actions.",
+  "review_run": 40057948773,
+  "review_commit": "100177d1307fd3d80195e640ff367dd663deb89c",
+  "model_files_identical_between_render_and_review": true
+}

@@ -1,0 +1,9 @@
+.run/
+node_modules/
+__pycache__/
+prototype/scratch/blender-flow-v8/previous/
+prototype/scratch/blender-flow-v8/output/*
+!prototype/scratch/blender-flow-v8/output/zibloo_flow_v8.blend
+!prototype/scratch/blender-flow-v8/output/zibloo_flow_v8.glb
+!prototype/scratch/blender-flow-v8/output/zibloo_flow_v8_source.glb
+!prototype/scratch/blender-flow-v8/output/provenance.json

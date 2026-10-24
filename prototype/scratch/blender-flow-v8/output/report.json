@@ -1,0 +1,314 @@
+{
+  "blender": "4.5.3 LTS",
+  "quad_cage_faces": 3791,
+  "quad_cage_vertices": 3793,
+  "runtime_vertices": 15166,
+  "bones": 104,
+  "non_manifold_edges": 0,
+  "clips": {
+    "Idle": 96,
+    "Greeting": 64,
+    "Focus": 96,
+    "Celebrate": 64
+  },
+  "weight_normalization_error": 4.563480615615845e-08,
+  "evaluated": {
+    "Idle": {
+      "bounds": [
+        [
+          -3.2510907649993896,
+          2.6054937839508057
+        ],
+        [
+          -1.3053463697433472,
+          1.9805986881256104
+        ],
+        [
+          -2.8735544681549072,
+          2.710893154144287
+        ]
+      ],
+      "vertices": 15166
+    },
+    "Greeting": {
+      "bounds": [
+        [
+          -1.9192522764205933,
+          2.9043424129486084
+        ],
+        [
+          -1.42540442943573,
+          2.0668482780456543
+        ],
+        [
+          -2.7316994667053223,
+          2.994965076446533
+        ]
+      ],
+      "vertices": 15166
+    },
+    "Focus": {
+      "bounds": [
+        [
+          -3.1788125038146973,
+          2.034975528717041
+        ],
+        [
+          -1.4532078504562378,
+          1.9494364261627197
+        ],
+        [
+          -1.872201681137085,
+          2.7074427604675293
+        ]
+      ],
+      "vertices": 15166
+    },
+    "Celebrate": {
+      "bounds": [
+        [
+          -2.61491322517395,
+          2.7188541889190674
+        ],
+        [
+          -1.2796330451965332,
+          1.9610435962677002
+        ],
+        [
+          -2.1181771755218506,
+          3.4141926765441895
+        ]
+      ],
+      "vertices": 15166
+    }
+  },
+  "glb_bytes": 2479248,
+  "rig_method": "independent deform segments driven by sampled 3D paths; baked transforms",
+  "topology_method": "automatic QuadriFlow cage, local junction fairing, subdivided rest surface before linear skinning",
+  "junction_fairing_max_displacement": 0.054002944201715704,
+  "source_collection": "EDITABLE_Source_Forms",
+  "temporal": {
+    "Idle": {
+      "max_rotation_per_frame_degrees": 3.9230851573650494,
+      "bone": "Arm04_12",
+      "proximal": [
+        {
+          "arm": 1,
+          "base_direction_excursion_degrees": 50.49924610020481,
+          "attachment_travel": 0.19179514578376747
+        },
+        {
+          "arm": 2,
+          "base_direction_excursion_degrees": 39.11980601841048,
+          "attachment_travel": 0.19449590803350753
+        },
+        {
+          "arm": 3,
+          "base_direction_excursion_degrees": 40.564667650529564,
+          "attachment_travel": 0.21590309354399786
+        },
+        {
+          "arm": 4,
+          "base_direction_excursion_degrees": 46.17840354445763,
+          "attachment_travel": 0.11447818327389137
+        },
+        {
+          "arm": 5,
+          "base_direction_excursion_degrees": 21.18211391821829,
+          "attachment_travel": 0.25233812312962384
+        },
+        {
+          "arm": 6,
+          "base_direction_excursion_degrees": 33.76481818081001,
+          "attachment_travel": 0.16616738409390885
+        },
+        {
+          "arm": 7,
+          "base_direction_excursion_degrees": 42.48626965652637,
+          "attachment_travel": 0.2084678166173718
+        },
+        {
+          "arm": 8,
+          "base_direction_excursion_degrees": 43.40694500569823,
+          "attachment_travel": 0.24488173770790378
+        }
+      ],
+      "loop_matrix_max_error": 3.91886972974919e-17
+    },
+    "Greeting": {
+      "max_rotation_per_frame_degrees": 11.211127592249047,
+      "bone": "Arm01_12",
+      "proximal": [
+        {
+          "arm": 1,
+          "base_direction_excursion_degrees": 64.97487240446844,
+          "attachment_travel": 0.26578103561609273
+        },
+        {
+          "arm": 2,
+          "base_direction_excursion_degrees": 37.782369601557356,
+          "attachment_travel": 0.2677213627404279
+        },
+        {
+          "arm": 3,
+          "base_direction_excursion_degrees": 39.62625771517776,
+          "attachment_travel": 0.27313524212690465
+        },
+        {
+          "arm": 4,
+          "base_direction_excursion_degrees": 45.54689449908201,
+          "attachment_travel": 0.18060926560034674
+        },
+        {
+          "arm": 5,
+          "base_direction_excursion_degrees": 26.632555357016983,
+          "attachment_travel": 0.3252991018115086
+        },
+        {
+          "arm": 6,
+          "base_direction_excursion_degrees": 43.15790264818123,
+          "attachment_travel": 0.2212548880606236
+        },
+        {
+          "arm": 7,
+          "base_direction_excursion_degrees": 54.87924492435347,
+          "attachment_travel": 0.2686446871371899
+        },
+        {
+          "arm": 8,
+          "base_direction_excursion_degrees": 56.13698669397088,
+          "attachment_travel": 0.32537092838172094
+        }
+      ],
+      "loop_matrix_max_error": 1.7881393432617188e-07
+    },
+    "Focus": {
+      "max_rotation_per_frame_degrees": 3.0378218391066403,
+      "bone": "Arm04_12",
+      "proximal": [
+        {
+          "arm": 1,
+          "base_direction_excursion_degrees": 39.03018710631074,
+          "attachment_travel": 0.11156623482227343
+        },
+        {
+          "arm": 2,
+          "base_direction_excursion_degrees": 24.831601812519285,
+          "attachment_travel": 0.12013835449109848
+        },
+        {
+          "arm": 3,
+          "base_direction_excursion_degrees": 30.876730746878064,
+          "attachment_travel": 0.14506762058749
+        },
+        {
+          "arm": 4,
+          "base_direction_excursion_degrees": 35.335614840845786,
+          "attachment_travel": 0.061614729496714524
+        },
+        {
+          "arm": 5,
+          "base_direction_excursion_degrees": 18.369853536904532,
+          "attachment_travel": 0.16746413593338855
+        },
+        {
+          "arm": 6,
+          "base_direction_excursion_degrees": 26.820928559231348,
+          "attachment_travel": 0.10368240277298651
+        },
+        {
+          "arm": 7,
+          "base_direction_excursion_degrees": 31.548701832896842,
+          "attachment_travel": 0.13999059581942777
+        },
+        {
+          "arm": 8,
+          "base_direction_excursion_degrees": 32.244554675348574,
+          "attachment_travel": 0.15207922379441077
+        }
+      ],
+      "loop_matrix_max_error": 2.081899616307561e-17
+    },
+    "Celebrate": {
+      "max_rotation_per_frame_degrees": 15.967689057929839,
+      "bone": "Arm04_12",
+      "proximal": [
+        {
+          "arm": 1,
+          "base_direction_excursion_degrees": 81.98154483399078,
+          "attachment_travel": 0.34146019343477696
+        },
+        {
+          "arm": 2,
+          "base_direction_excursion_degrees": 62.88825644321872,
+          "attachment_travel": 0.3316370720948235
+        },
+        {
+          "arm": 3,
+          "base_direction_excursion_degrees": 64.33987654752153,
+          "attachment_travel": 0.343513614076277
+        },
+        {
+          "arm": 4,
+          "base_direction_excursion_degrees": 80.17255557193457,
+          "attachment_travel": 0.21956094699197587
+        },
+        {
+          "arm": 5,
+          "base_direction_excursion_degrees": 33.498666199422125,
+          "attachment_travel": 0.3986696430113357
+        },
+        {
+          "arm": 6,
+          "base_direction_excursion_degrees": 54.770419520307655,
+          "attachment_travel": 0.2768373390935763
+        },
+        {
+          "arm": 7,
+          "base_direction_excursion_degrees": 68.29100437859051,
+          "attachment_travel": 0.32962855500247007
+        },
+        {
+          "arm": 8,
+          "base_direction_excursion_degrees": 69.9303795529878,
+          "attachment_travel": 0.40672607850068154
+        }
+      ],
+      "loop_matrix_max_error": 2.980232238769531e-07
+    }
+  },
+  "eye_controls": "Two capsule + two closed-smile bones; gaze, opening, tilt, blink and smile are baked into each GLB action",
+  "volume": {
+    "body": {
+      "width": 5.758454322814941,
+      "depth": 3.149917244911194,
+      "height": 5.292696952819824,
+      "depth_to_width": 0.54700742045157
+    },
+    "head_band": {
+      "width": 1.8736205697059631,
+      "depth": 2.2485439777374268,
+      "height": 1.349886178970337,
+      "depth_to_width": 1.2001063684363278
+    }
+  },
+  "palettes": {
+    "teal": [
+      "236E69",
+      "A3D9C9"
+    ],
+    "sand": [
+      "B69A68",
+      "F1E4C9"
+    ],
+    "rust": [
+      "A45338",
+      "E6B58A"
+    ],
+    "ink": [
+      "433D35",
+      "B8ADA0"
+    ]
+  },
+  "color_scope": "Blender editable skin_stage shader and JavaScript runtime vertex-color transition; base GLB has static teal vertex colors"
+}
