@@ -1,0 +1,47 @@
+name: Blender form study
+on:
+  push:
+    branches: [codex/blender-flow-v2]
+    paths:
+      - 'prototype/scratch/blender-flow-v2/**'
+      - 'docs/brand/3d/build_zibloo.py'
+      - '.github/workflows/blender-study.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: blender-form-study
+  cancel-in-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TMPDIR: ${{ github.workspace }}/.tmp
+      OMP_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install official Blender 4.5.3 LTS on the cloud runner
+        run: |
+          mkdir -p "$TMPDIR" tools
+          curl --fail --location --retry 2 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz -o tools/blender.tar.xz
+          curl --fail --location --retry 2 https://download.blender.org/release/Blender4.5/blender-4.5.3.sha256 -o tools/blender.sha256
+          cd tools
+          expected=$(awk '$2 == "blender-4.5.3-linux-x64.tar.xz" {print $1}' blender.sha256)
+          test -n "$expected"
+          printf '%s  blender.tar.xz\n' "$expected" | sha256sum --check -
+          tar -xf blender.tar.xz
+          sudo apt-get update -qq
+          sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1
+      - name: Generate model and render four review views on CPU
+        run: |
+          tools/blender-4.5.3-linux-x64/blender -b -t 2 --python-exit-code 1 --python prototype/scratch/blender-flow-v2/build.py -- --output prototype/scratch/blender-flow-v2/output --samples 24 --size 768
+      - name: Check the exported GLB color data
+        run: python3 prototype/scratch/blender-flow-v2/inspect_glb.py prototype/scratch/blender-flow-v2/output/zibloo_flow_v2.glb
+      - name: Preserve the model, images and report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: blender-flow-v2
+          path: prototype/scratch/blender-flow-v2/output/
+          retention-days: 7

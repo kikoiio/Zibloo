@@ -1,0 +1,16 @@
+{
+  "name": "zibloo-model-study-v8",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "three": "0.180.0",
+    "@gltf-transform/core": "4.2.1",
+    "@gltf-transform/extensions": "4.2.1",
+    "@gltf-transform/functions": "4.2.1",
+    "meshoptimizer": "0.24.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.11",
+    "playwright": "1.64.1"
+  }
+}

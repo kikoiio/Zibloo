@@ -1,0 +1,74 @@
+name: Blender transparent sprite render v8
+on:
+  push:
+    branches: [codex/transparent-v8]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: blender-transparent-v8
+  cancel-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TMPDIR: ${{ github.workspace }}/.tmp
+      OMP_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - name: Install official Blender
+        run: |
+          mkdir -p "$TMPDIR" tools
+          curl --fail --location --retry 2 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz -o tools/blender.tar.xz
+          curl --fail --location --retry 2 https://download.blender.org/release/Blender4.5/blender-4.5.3.sha256 -o tools/blender.sha256
+          cd tools
+          expected=$(awk '$2 == "blender-4.5.3-linux-x64.tar.xz" {print $1}' blender.sha256)
+          test -n "$expected"
+          printf '%s  blender.tar.xz\n' "$expected" | sha256sum --check -
+          tar -xf blender.tar.xz
+          sudo apt-get update -qq
+          sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1
+      - name: Verify archived v8 model provenance
+        run: |
+          cd prototype/scratch/blender-flow-v8/output
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          p=json.loads(Path('provenance.json').read_text())['files']
+          for name, meta in p.items():
+              actual=hashlib.sha256(Path(name).read_bytes()).hexdigest()
+              assert actual == meta['sha256'], (name, actual, meta['sha256'])
+          print('verified', len(p), 'archived model files')
+          PY
+      - name: Render 16 transparent frames per action
+        run: tools/blender-4.5.3-linux-x64/blender -b -t 2 --python-exit-code 1 prototype/scratch/blender-flow-v8/output/zibloo_flow_v8.blend --python prototype/scratch/blender-flow-v8/transparent/render_frames.py
+      - name: Package sprite sheets
+        run: |
+          python3 -m venv "$TMPDIR/package-python"
+          "$TMPDIR/package-python/bin/pip" install --disable-pip-version-check Pillow
+          "$TMPDIR/package-python/bin/python" prototype/scratch/blender-flow-v8/transparent/package.py
+      - name: Verify transparent output
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('prototype/scratch/blender-flow-v8/transparent/sheets')
+          report=json.loads((root/'package-report.json').read_text())
+          assert set(report['sheets']) == {'idle','focus','greeting','celebrate'}
+          for clip, data in report['sheets'].items():
+              assert data['frames'] == 16
+              assert data['transparent_corners'], clip
+              assert data['webp_bytes'] < 512*1024, (clip, data['webp_bytes'])
+              assert (root/f'{clip}-sprite.webp').stat().st_size == data['webp_bytes']
+          print('transparent sprite verification passed')
+          PY
+      - name: Preserve transparent renders
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: blender-transparent-v8
+          path: prototype/scratch/blender-flow-v8/transparent/
+          retention-days: 7
