@@ -659,6 +659,10 @@ def animate(rig, chains):
                 squash=1+.022*wave
             root_matrix = Matrix.Translation((sway,0,lift)) @ Matrix.Rotation(turn,4,'Z') @ Matrix.Rotation(-sway,4,'Y')
             rig.pose.bones['Root'].matrix = root_matrix @ rig.data.bones['Root'].matrix_local
+            # PoseBone.matrix resolves through its evaluated parent. Update
+            # Root first or Crown is baked against the previous key's parent,
+            # producing a small seam even when the path formulas are periodic.
+            bpy.context.view_layer.update()
             rig.pose.bones['Crown'].matrix = root_matrix @ crown_matrix(clip,phase) @ rig.data.bones['Crown'].matrix_local
             bpy.context.view_layer.update()
             head = rig.pose.bones['Head']
@@ -703,8 +707,11 @@ def measure_animation(rig,actions):
     result={}
     for name,length in CLIPS.items():
         previous={};largest=(0.,'');proximal={i:[] for i in range(8)};anchors={i:[] for i in range(8)}
+        first_matrices=None
         for frame_number in range(1,length+2):
             select_action(rig,actions[name],frame_number)
+            if first_matrices is None:
+                first_matrices={bone.name:bone.matrix_basis.copy() for bone in rig.pose.bones}
             for bone in rig.pose.bones:
                 if not bone.name.startswith('Arm'):continue
                 q=bone.rotation_quaternion.normalized()
@@ -724,7 +731,10 @@ def measure_animation(rig,actions):
             distance=max((a-b).length for a in anchors[i] for b in anchors[i])
             excursions.append({'arm':i+1,'base_direction_excursion_degrees':angle,'attachment_travel':distance})
             assert angle>12.,f'Arm base remains rigid: {name} / {i+1}: {angle}'
-        result[name]={'max_rotation_per_frame_degrees':largest[0],'bone':largest[1],'proximal':excursions}
+        seam=max(abs(bone.matrix_basis[row][col]-first_matrices[bone.name][row][col])
+                 for bone in rig.pose.bones for row in range(4) for col in range(4))
+        assert seam<1e-4,f'Baked bone loop does not close: {name}: {seam}'
+        result[name]={'max_rotation_per_frame_degrees':largest[0],'bone':largest[1],'proximal':excursions,'loop_matrix_max_error':seam}
         assert largest[0]<30.,f'Tentacle snaps during {name}: {largest}'
     return result
 
