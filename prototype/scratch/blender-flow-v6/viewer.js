@@ -73,10 +73,7 @@ function initializeBodyColor(){
   geometry.computeBoundingBox();
   const positions=geometry.attributes.position;
   colorAttribute=geometry.attributes.color;
-  if(!colorAttribute){
-    colorAttribute=new THREE.BufferAttribute(new Float32Array(positions.count*3),3);
-    geometry.setAttribute('color',colorAttribute);
-  }
+  if(!colorAttribute)throw Error('Missing exported body vertex colors');
   const sourceAttribute=colorAttribute;
   colorItemSize=sourceAttribute.itemSize;
   const restColor=new Float32Array(positions.count*colorItemSize);
@@ -186,7 +183,7 @@ async function playColorDemo(){
   if(demoRunning){stopColorDemo();return false;}
   if(!colorBody||reduced.matches)return false;
   stopColorDemo();
-  const token=++colorDemoToken,original=currentColor;
+  const token=++colorDemoToken,original=targetColor;
   demoRunning=true;updateColorControls();
   for(const name of colorSequence){
     if(token!==colorDemoToken)return false;

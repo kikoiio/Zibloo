@@ -132,6 +132,7 @@ try {
   assert(initialColors.eyes.length>=2,'Expected both eye meshes to remain separate from body vertex colors');
   await page.screenshot({path:'output/browser-color-teal.png',fullPage:true,timeout:15000});
   let previousBody=initialColors.body.samples;
+  const paletteSamples={teal:initialColors.body.samples};
   observations.color_palettes={};
   for(const name of paletteNames.slice(1)){
     await page.locator(`[data-color="${name}"]`).click();
@@ -143,6 +144,7 @@ try {
     assert.equal(await page.locator(`[data-color="${name}"]`).getAttribute('aria-pressed'),'true');
     await page.screenshot({path:`output/browser-color-${name}.png`,fullPage:true,timeout:15000});
     observations.color_palettes[name]={body_vertices:colors.body.count,changed:true,eyes_unchanged:true};
+    paletteSamples[name]=colors.body.samples;
     previousBody=colors.body.samples;
   }
   await page.locator('[data-color="teal"]').click();
@@ -156,10 +158,18 @@ try {
   assert.equal(middleColors.colorState.transitioning,true);
   assert(middleColors.colorState.progress>.1&&middleColors.colorState.progress<.9,JSON.stringify(middleColors.colorState));
   assert.notDeepEqual(middleColors.body.samples,initialColors.body.samples,'Intermediate frame did not change body COLOR values');
+  const spatialFractions=middleColors.body.samples.map((point,i)=>{
+    const from=paletteSamples.teal[i],to=paletteSamples.rust[i];
+    const delta=to.map((value,j)=>value-from[j]);
+    const denominator=delta.reduce((sum,value)=>sum+value*value,0);
+    return denominator>1e-8?point.reduce((sum,value,j)=>sum+(value-from[j])*delta[j],0)/denominator:0;
+  });
+  const spatialSpread=Math.max(...spatialFractions)-Math.min(...spatialFractions);
+  assert(spatialSpread>.25,`Color wave applied uniformly instead of spreading: ${spatialSpread}`);
   await page.screenshot({path:'output/browser-color-gradient.png',fullPage:true,timeout:15000});
   await page.waitForFunction(()=>!window.modelStudy.colorState.transitioning);
   assert.equal(await page.evaluate(()=>window.modelStudy.currentColor),'rust');
-  observations.color_transition={progress:middleColors.colorState.progress,paused_action:true,intermediate_body_update:true};
+  observations.color_transition={progress:middleColors.colorState.progress,paused_action:true,intermediate_body_update:true,spatial_fraction_spread:spatialSpread};
   await page.locator('[data-color-demo]').click();
   await page.waitForFunction(()=>window.modelStudy.colorState.demoRunning);
   const demoTargets=[];let demoDeadline=Date.now()+12000;
