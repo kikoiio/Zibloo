@@ -28,10 +28,10 @@
 .swim-area{position:absolute;inset:0 0 50px;width:100%;cursor:crosshair;z-index:0}
 .home-stage .mascot-main{transition-property:translate;transition-timing-function:cubic-bezier(.25,.1,.25,1)}
 .mascot-main>.live-zibloo{rotate:var(--swim-lean,0deg);transition:rotate .2s ease}
-.mascot-main.is-swimming .zibloo-art{animation:b2-swim .86s ease-in-out infinite}
-.mascot-main.is-swimming:before,.mascot-main.is-swimming:after{content:"";position:absolute;z-index:0;border:1.5px solid #86bdb080;border-radius:50%;opacity:0;pointer-events:none;animation:b2-wake .72s ease-out infinite}
-.mascot-main.is-swimming:before{width:10px;height:10px;left:27%;bottom:23%}
-.mascot-main.is-swimming:after{width:7px;height:7px;left:21%;bottom:19%;animation-delay:.24s}
+.mascot-main.is-swimming .zibloo-art{animation:b2-swim .68s ease-in-out infinite}
+.mascot-main.is-swimming:before,.mascot-main.is-swimming:after{content:"";position:absolute;z-index:0;border:2px solid #69a9a0;border-radius:50%;background:#e6f5f0;opacity:0;pointer-events:none;animation:b2-wake .86s ease-out infinite}
+.mascot-main.is-swimming:before{width:13px;height:13px;left:27%;bottom:23%}
+.mascot-main.is-swimming:after{width:9px;height:9px;left:20%;bottom:19%;animation-delay:.22s}
 .mascot-main>.live-zibloo{position:relative;z-index:1}
 .caption-actions{display:flex;align-items:center;justify-content:center;gap:12px}
 .swim-reset{padding:2px 5px;color:var(--brand-dark);font-size:inherit;text-decoration:underline;text-underline-offset:3px}
@@ -45,13 +45,15 @@
 }
 @keyframes b2-swim{
   0%,100%{transform:translateY(1px) rotate(0deg) scale(1)}
-  28%{transform:translateY(-5px) rotate(-2deg) scale(1.012,.99)}
-  62%{transform:translateY(2px) rotate(2.6deg) scale(.99,1.012)}
+  18%{transform:translateY(-12px) rotate(-4.5deg) scale(1.025,.985)}
+  42%{transform:translateY(2px) rotate(1deg) scale(.985,1.025)}
+  66%{transform:translateY(-10px) rotate(5deg) scale(1.025,.99)}
+  86%{transform:translateY(1px) rotate(-2deg) scale(.99,1.015)}
 }
 @keyframes b2-wake{
   0%{opacity:0;transform:translate(0,0) scale(.65)}
-  22%{opacity:.75}
-  100%{opacity:0;transform:translate(-7px,-34px) scale(1.05)}
+  18%,58%{opacity:.88}
+  100%{opacity:0;transform:translate(-10px,-42px) scale(1.15)}
 }
 @keyframes b2-training{
   0%,100%{transform:translateY(0) rotate(0deg) scale(1)}

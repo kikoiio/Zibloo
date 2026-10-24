@@ -8,7 +8,7 @@
 
 用户指出上一版手工重画改变了已选形象和字标，该稿已撤回。当前通过 SVG 显示窗口直接呈现保存好的 B2 角色和 C3 原排版组合，保持 PNG 原图字形、比例与轮廓，不重新描画。
 
-本机预览：<http://127.0.0.1:4318/?v=b2-swim-2>。本版是一次性视觉与交互原型。
+本机预览：<http://127.0.0.1:4318/?v=b2-swim-4>。本版是一次性视觉与交互原型。
 
 ## 原图与动作边界
 
@@ -28,7 +28,7 @@
 
 ## 验证
 
-上轮 [2D 动画与游动云端验证通过](https://github.com/kikoiio/Zibloo/actions/runs/40107224002)。本轮补充周期性身体摆动和短暂气泡尾迹，验证通过后更新记录。历史恢复版检查保留在 [approved-originals](../../review/approved-originals-2026-10-22/README.md)。
+本轮 [2D 游动动作云端验证通过](https://github.com/kikoiio/Zibloo/actions/runs/40108876723)，提交 `19511fc767a8befdb1f93060b890ea34fb41f037`；覆盖游动摆动、气泡尾迹、减少动态效果、主要计时流程及已选声音。[最新截图与记录](../../review/2d-swimming-2026-10-24/README.md)。历史恢复版检查保留在 [approved-originals](../../review/approved-originals-2026-10-22/README.md)。
 
 ## 声音探索与提醒修复
 

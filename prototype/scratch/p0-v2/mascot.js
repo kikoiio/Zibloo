@@ -63,6 +63,7 @@
     const caption=stage.querySelector('.character-caption');
     if(!mover||!surface||!caption)return null;
     let target={x:0,y:0};
+    let settleTimer=0;
     const clamp=(value,min,max)=>Math.max(min,Math.min(Math.max(min,max),value));
     const constrain=({x,y})=>{
       const halfWidth=mover.offsetWidth/2,halfHeight=mover.offsetHeight/2;
@@ -72,10 +73,14 @@
       };
     };
     const settle=()=>{
+      clearTimeout(settleTimer);
+      settleTimer=0;
       mover.classList.remove('is-swimming');
       mover.style.setProperty('--swim-lean','0deg');
     };
     function move(point,animate=true) {
+      clearTimeout(settleTimer);
+      settleTimer=0;
       const current=getComputedStyle(mover).translate.split(' ').map(parseFloat);
       target=constrain(point);
       const dx=target.x-(current[0]||0),dy=target.y-(current[1]||0);
@@ -84,6 +89,7 @@
       mover.style.transitionDuration=moving?`${Math.min(900,300+distance*2)}ms`:'0s';
       mover.style.setProperty('--swim-lean',`${moving?clamp(dx/15,-4,4):0}deg`);
       mover.classList.toggle('is-swimming',moving);
+      if(!moving)mover.style.setProperty('--swim-lean','0deg');
       // Position and the artwork's idle/greeting transforms live on separate elements.
       mover.style.translate=`${target.x}px ${target.y}px`;
     }
@@ -107,7 +113,10 @@
     });
     stage.querySelector('.swim-reset')?.addEventListener('click',()=>move({x:0,y:0}));
     mover.addEventListener('transitionend',event=>{
-      if(event.target===mover&&event.propertyName==='translate')settle();
+      if(event.target===mover&&event.propertyName==='translate') {
+        clearTimeout(settleTimer);
+        settleTimer=setTimeout(settle,420);
+      }
     });
     const observer=new ResizeObserver(()=>move(target,false));
     observer.observe(stage);

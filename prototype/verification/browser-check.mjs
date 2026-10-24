@@ -175,6 +175,11 @@ try {
     assert.notEqual(during,home,`${name}: pointing at water should move the character`);
     assert.equal(await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).animationName),'b2-swim',`${name}: movement should use the swimming pose`);
     assert.equal(await mover.evaluate(el=>getComputedStyle(el,'::before').animationName),'b2-wake',`${name}: movement should leave a short bubble wake`);
+    const firstPose=await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).transform);
+    await page.waitForTimeout(130);
+    const nextPose=await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).transform);
+    assert.notEqual(nextPose,firstPose,`${name}: the approved artwork should visibly change pose during a short swim`);
+    await page.waitForFunction(()=>Number.parseFloat(getComputedStyle(document.querySelector('.mascot-main'),'::before').opacity)>.1,{}, {timeout:1000});
     await page.mouse.click(right.x,right.y);
     const retargeted=await position();
     const coords=value=>value.split(' ').map(parseFloat);
