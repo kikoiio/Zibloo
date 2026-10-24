@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zibloo · 灵动与眼神</title>
+<style>
+@font-face{font-family:ZiblooReview;src:url(review-font.woff2);font-display:swap}
+*{box-sizing:border-box}body{margin:0;background:#f3f0e8;color:#183d3b;font:16px/1.6 ZiblooReview,system-ui,sans-serif}main{max-width:1080px;margin:auto;padding:36px 24px}
+header{display:flex;justify-content:space-between;align-items:center;gap:20px}h1{font-size:28px;letter-spacing:0;margin:0}small,.note{color:#627d76}
+.stage{height:min(66vh,640px);min-height:330px;border-radius:32px;margin-top:24px;background:radial-gradient(ellipse at 50% 40%,#fffdf5,#e1e8dd);position:relative;overflow:hidden}canvas{display:block;width:100%;height:100%;touch-action:none}.status{position:absolute;bottom:12px;left:24px;font-size:13px;color:#55736d}
+.controls{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:22px 0}button,a.link{border:1px solid #b9cec3;border-radius:24px;background:#fffdf5;color:inherit;padding:10px 22px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#236e69;color:white;border-color:#236e69}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,a:focus-visible{outline:3px solid #4aada3;outline-offset:3px}
+label{display:flex;align-items:center;gap:8px;justify-content:center}.note{text-align:center;font-size:14px}.downloads{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:12px;margin-top:22px}.link{text-decoration:none}.download-note{flex-basis:100%;text-align:center;font-size:12px}
+.color-picker{border:0;padding:0;margin:20px 0 0;display:grid;justify-items:center;gap:8px}.color-picker legend{padding:0 0 4px;font-weight:600}.color-row{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}.color-button{display:inline-flex;align-items:center;gap:8px}.swatch{width:14px;height:14px;flex:none;border:1px solid #ffffffaa;border-radius:50%;box-shadow:0 0 0 1px #52635b55}.color-button[data-color="teal"] .swatch{background:#236e69}.color-button[data-color="sand"] .swatch{background:#b69a68}.color-button[data-color="rust"] .swatch{background:#a45338}.color-button[data-color="ink"] .swatch{background:#433d35}.color-demo-button{margin-top:3px}.previews{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}.previews img{width:100%;border-radius:16px}.previews a{color:inherit;text-decoration:none;font-size:14px;text-align:center}input{accent-color:#236e69}
+@media(max-width:600px){main{padding:20px 12px}header{display:block}h1{font-size:24px}.previews{grid-template-columns:repeat(2,1fr)}button{padding:10px 16px}.color-row{gap:6px}.color-button{padding:8px 11px;font-size:14px}}
+</style>
+<main>
+<header><div><h1>zibloo · 灵动与眼神 v7</h1><small>更大的伸展与回卷 · 用眼睛传达情绪</small></div><small>拖动角色，观察侧面</small></header>
+<div class="stage"><canvas aria-label="可旋转的 Zibloo 三维动作预览"></canvas><div class="status" role="status">正在加载角色…</div></div>
+<div class="controls" aria-label="角色动作">
+<button data-clip="Idle" aria-pressed="true">安静陪伴</button><button data-clip="Greeting" aria-pressed="false">招手问候</button><button data-clip="Focus" aria-pressed="false">专注托珠</button><button data-clip="Celebrate" aria-pressed="false">欢愉达成</button>
+</div>
+<fieldset class="color-picker" aria-label="角色颜色">
+<legend>角色颜色</legend>
+<div class="color-row">
+<button class="color-button" type="button" data-color="teal" aria-pressed="true" disabled><span class="swatch" aria-hidden="true"></span>青碧</button>
+<button class="color-button" type="button" data-color="sand" aria-pressed="false" disabled><span class="swatch" aria-hidden="true"></span>沙色</button>
+<button class="color-button" type="button" data-color="rust" aria-pressed="false" disabled><span class="swatch" aria-hidden="true"></span>赤褐</button>
+<button class="color-button" type="button" data-color="ink" aria-pressed="false" disabled><span class="swatch" aria-hidden="true"></span>墨棕</button>
+</div>
+<button class="color-demo-button" type="button" data-color-demo disabled>变色演示</button>
+</fieldset>
+<div class="controls" aria-label="观察视角"><button data-view="hero" aria-pressed="true">主视角</button><button data-view="front" aria-pressed="false">正面</button><button data-view="side" aria-pressed="false">侧面</button><button data-view="back" aria-pressed="false">背面</button><button data-view="eyes" aria-pressed="false">眼神特写</button></div>
+<p class="note emotion" aria-live="polite">放松 · 自然眨眼与游移视线</p>
+<label>动作进度 <input id="pose-time" type="range" min="0" max="99" value="42" aria-label="查看动作中的姿势"></label>
+<label><input id="motion" type="checkbox" checked>播放动作</label>
+<div class="downloads"><a class="link" href="expressions.jpg">四种眼神</a><a class="link" href="motion-keys.jpg">动作关键帧</a><a class="link" href="zibloo_flow_v7.blend">Blender 工程</a><a class="link" href="zibloo_flow_v7.glb">GLB 模型</a><small class="download-note">GLB 保存基础配色，变色由预览页驱动</small></div>
+<div class="previews"><a href="idle.gif"><img src="idle.png" alt="待机悬浮动作">安静陪伴</a><a href="greeting.gif"><img src="greeting.png" alt="招手动作">招手问候</a><a href="focus.gif"><img src="focus.png" alt="托举光珠动作">专注托珠</a><a href="celebrate.gif"><img src="celebrate.png" alt="庆祝动作">欢愉达成</a></div>
+</main>
+<script type="module" src="viewer.js"></script>
+</html>
