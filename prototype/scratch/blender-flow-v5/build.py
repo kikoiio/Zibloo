@@ -98,6 +98,23 @@ def frame(head, tail):
     return Matrix.Translation(head) @ (tail-head).to_track_quat("Y", "Z").to_matrix().to_4x4()
 
 
+def transported_frames(line, initial):
+    """Carry the same cross-section along a whole chain without roll flips."""
+    tangent = (line[1]-line[0]).normalized()
+    first_rotation = initial.col[1].rotation_difference(tangent)
+    side = first_rotation @ initial.col[0]
+    previous = tangent
+    frames = []
+    for a,b in zip(line,line[1:]):
+        tangent = (b-a).normalized()
+        side = previous.rotation_difference(tangent) @ side
+        side = (side-tangent*side.dot(tangent)).normalized()
+        normal = side.cross(tangent).normalized()
+        frames.append(Matrix((side,tangent,normal)).transposed())
+        previous = tangent
+    return frames
+
+
 def volume_measurements(body):
     def dimensions(vertices):
         spans = [max(v.co[i] for v in vertices)-min(v.co[i] for v in vertices) for i in range(3)]
@@ -386,6 +403,11 @@ def pose_points(arm_index, clip, phase):
 def animate(rig, chains):
     rig.animation_data_create()
     actions = {}
+    rest_frames = []
+    for chain in chains:
+        line = [a for _,a,_ in chain]+[chain[-1][2]]
+        initial = rig.data.bones[chain[0][0]].matrix_local.to_3x3()
+        rest_frames.append(transported_frames(line,initial))
     for clip, length in CLIPS.items():
         action = bpy.data.actions.new(clip)
         action.use_fake_user = True
@@ -404,11 +426,13 @@ def animate(rig, chains):
             head.matrix = root_matrix @ rig.data.bones["Head"].matrix_local @ Matrix.Rotation(.025*wave,4,"X")
             for arm_index, chain in enumerate(chains):
                 line = pose_points(arm_index,clip,phase)
+                target_frames = transported_frames(line,rest_frames[arm_index][0])
                 for i,(name,a,b) in enumerate(chain):
                     ratio = (line[i+1]-line[i]).length/(b-a).length
-                    # Rotate from the rest direction with the smallest twist;
-                    # a fixed world-up frame can roll abruptly near vertical.
-                    bend = (b-a).rotation_difference(line[i+1]-line[i]).to_matrix()
+                    # Compare transported rest/pose frames. Independent shortest
+                    # arcs can pick opposite roll axes around a folded U-turn,
+                    # collapsing the cross-section under linear skin blending.
+                    bend = target_frames[i] @ rest_frames[arm_index][i].transposed()
                     orientation = (bend @ rig.data.bones[name].matrix_local.to_3x3()).to_4x4()
                     rig.pose.bones[name].matrix = root_matrix @ Matrix.Translation(line[i]) @ orientation @ Matrix.Diagonal((1,ratio,1,1))
             orb = rig.pose.bones["Orb"]
