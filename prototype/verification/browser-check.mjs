@@ -191,6 +191,7 @@ try {
     await page.keyboard.press('Home');
     assert.equal(await position(),home,`${name}: keyboard Home should recenter`);
     await page.emulateMedia({reducedMotion:'reduce'});
+    await page.waitForFunction(()=>document.querySelector('#character-state-label')?.textContent.includes('已减少动态效果'));
     await area.focus();
     await page.keyboard.press('ArrowLeft');
     assert.equal(await mover.evaluate(el=>el.classList.contains('is-swimming')),false);

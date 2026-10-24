@@ -516,6 +516,6 @@ document.addEventListener('keydown',event=>{
   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
 });
 document.addEventListener('visibilitychange',()=>document.documentElement.classList.toggle('document-hidden',document.hidden));
-reducedMotion.addEventListener('change',()=>{if(state.page==='home')render(false);});
+reducedMotion.addEventListener('change',updateCharacter);
 setInterval(()=>{if(state.session&&!state.session.paused)updateTimer();},500);
 render(false);
