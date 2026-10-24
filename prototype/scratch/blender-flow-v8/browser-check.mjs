@@ -9,6 +9,16 @@ let browser;
 try {
   browser=await chromium.launch({headless:true,channel:existsSync('/opt/google/chrome/chrome')?'chrome':undefined,args:['--disable-gpu','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
   const page=await browser.newPage({viewport:{width:1100,height:1000},reducedMotion:'reduce'});
+  const captureColorCanvas=async path=>{
+    // A full-page screenshot can resize/clear WebGL while the test clock is
+    // paused. Read the actual freshly rendered buffer in the same browser task.
+    const data=await page.evaluate(()=>{
+      const {renderer,model,camera}=window.modelStudy;
+      renderer.render(model.parent,camera);
+      return renderer.domElement.toDataURL('image/png').split(',')[1];
+    });
+    await writeFile(path,Buffer.from(data,'base64'));
+  };
   page.setDefaultTimeout(20000);
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   console.log('Loading standalone review page');
@@ -187,7 +197,7 @@ try {
   assert.equal(initialColors.currentColor,'teal');
   assert.equal(initialColors.colorState.transitioning,false,'Reduced motion should apply colors immediately');
   assert(initialColors.eyes.length>=2,'Expected both eye meshes to remain separate from body vertex colors');
-  await page.screenshot({path:'output/browser-color-teal.png',fullPage:true,timeout:15000});
+  await captureColorCanvas('output/browser-color-teal.png');
   let previousBody=initialColors.body.samples;
   const paletteSamples={teal:initialColors.body.samples};
   observations.color_palettes={};
@@ -199,7 +209,7 @@ try {
     assert.notDeepEqual(colors.body.samples,previousBody,`${name} did not update body COLOR values`);
     assert.deepEqual(colors.eyes,initialColors.eyes,`${name} changed eye materials`);
     assert.equal(await page.locator(`[data-color="${name}"]`).getAttribute('aria-pressed'),'true');
-    await page.screenshot({path:`output/browser-color-${name}.png`,fullPage:true,timeout:15000});
+    await captureColorCanvas(`output/browser-color-${name}.png`);
     observations.color_palettes[name]={body_vertices:colors.body.count,changed:true,eyes_unchanged:true};
     paletteSamples[name]=colors.body.samples;
     previousBody=colors.body.samples;
@@ -225,7 +235,7 @@ try {
   });
   const spatialSpread=Math.max(...spatialFractions)-Math.min(...spatialFractions);
   assert(spatialSpread>.25,`Color wave applied uniformly instead of spreading: ${spatialSpread}`);
-  await page.screenshot({path:'output/browser-color-gradient.png',fullPage:true,timeout:15000});
+  await captureColorCanvas('output/browser-color-gradient.png');
   await page.clock.resume();
   await page.waitForFunction(()=>!window.modelStudy.colorState.transitioning);
   assert.equal(await page.evaluate(()=>window.modelStudy.currentColor),'rust');
