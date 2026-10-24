@@ -173,6 +173,8 @@ try {
     await page.waitForTimeout(70);
     const during=await position();
     assert.notEqual(during,home,`${name}: pointing at water should move the character`);
+    assert.equal(await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).animationName),'b2-swim',`${name}: movement should use the swimming pose`);
+    assert.equal(await mover.evaluate(el=>getComputedStyle(el,'::before').animationName),'b2-wake',`${name}: movement should leave a short bubble wake`);
     await page.mouse.click(right.x,right.y);
     const retargeted=await position();
     const coords=value=>value.split(' ').map(parseFloat);
@@ -196,6 +198,8 @@ try {
     await page.keyboard.press('ArrowLeft');
     assert.equal(await mover.evaluate(el=>el.classList.contains('is-swimming')),false);
     assert.equal(await mover.evaluate(el=>getComputedStyle(el).transitionDuration),'0s');
+    assert.equal(await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).animationName),'none');
+    assert.equal(await mover.evaluate(el=>getComputedStyle(el,'::before').animationName),'none');
     await clearCaption(page,`${name} reduced-motion movement`);
     await capture(page,`${name}-2d-swimming`);
     await nav(page,'settings');
