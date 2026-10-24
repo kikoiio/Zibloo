@@ -290,6 +290,9 @@ def make_rig(body, samples):
     bpy.data.collections['EDITABLE_Source_Forms'].objects.link(cage)
     bpy.context.view_layer.objects.active = body
     bpy.ops.object.modifier_apply(modifier=finish.name)
+    # Applying a modifier may replace the underlying deform-group list. Do not
+    # retain pre-apply RNA group wrappers when looking up final mesh indices.
+    final_group_indices = {group.name:group.index for group in body.vertex_groups}
     # glTF has a fixed triangle mesh. Both Blender and the browser now skin the
     # same subdivided rest surface with the same four normalized influences.
     max_error = 0.
@@ -299,15 +302,19 @@ def make_rig(body, samples):
             # Truncating interpolated cage weights would create tiny ridges
             # where five or six interpolated bone influences trade rank.
             direct = continuous_weights(vertex.co)
-            weights = [(groups[name].index,weight) for name,weight in direct.items()]
+            weights = [(final_group_indices[name],weight) for name,weight in direct.items() if weight>1e-8]
         else:
             weights = sorted(((g.group,g.weight) for g in vertex.groups),key=lambda item:item[1],reverse=True)[:4]
         total = sum(weight for _,weight in weights)
-        for group in body.vertex_groups:
-            group.remove([vertex.index])
+        old_indices = [g.group for g in vertex.groups]
+        for index in old_indices:
+            body.vertex_groups[index].remove([vertex.index])
         for index,weight in weights:
             body.vertex_groups[index].add([vertex.index],weight/total,"REPLACE")
+    for vertex in body.data.vertices:
         max_error = max(max_error,abs(sum(g.weight for g in vertex.groups)-1))
+        assert 1<=len(vertex.groups)<=4, f'Invalid influence count at vertex {vertex.index}'
+    assert max_error<1e-6, f'Unnormalized runtime skin weights: {max_error}'
     modifier = body.modifiers.new("Shared linear skin deformation", "ARMATURE")
     modifier.object = rig
     modifier.use_deform_preserve_volume = False

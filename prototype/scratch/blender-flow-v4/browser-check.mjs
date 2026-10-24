@@ -84,6 +84,7 @@ try {
       color_0:!!body.geometry.attributes.color,bones:body.skeleton.bones.length};
   });
   assert.equal(observations.clips.length,4);assert(observations.color_0);
+  assert.equal(observations.bones,75,'Unexpected joint added for unweighted vertices');
   for(const clip of observations.clips){assert(clip.finite);assert(clip.movement>.015,JSON.stringify(clip));assert(clip.loop_gap<.025,JSON.stringify(clip));}
   observations.frozen_pose_max_error={};
   for(const name of ['Idle','Greeting','Focus','Celebrate']){
