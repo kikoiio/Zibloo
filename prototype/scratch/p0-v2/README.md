@@ -28,7 +28,7 @@
 
 ## 验证
 
-上一版整图游动检查记录保留在 [2D 游动动作云端验证](https://github.com/kikoiio/Zibloo/actions/runs/40109793609)（提交 `d26618e9974b8e2a377d69d87d4494425b04a558`）；本版姿态帧动画的云端验证待提交后运行。历史恢复版检查保留在 [approved-originals](../../review/approved-originals-2026-10-22/README.md)。
+本版姿态帧动画的[云端验证已通过](https://github.com/kikoiio/Zibloo/actions/runs/40117331256)，提交 `085f420b2c7b1a3a90743a70831517c82479c9a9`；检查覆盖五张对齐姿态帧、腕足循环切换、抬爪招呼、桌面/手机/小屏游动与减少动态效果。上一版整图游动检查保留在 [2D 游动动作云端验证](https://github.com/kikoiio/Zibloo/actions/runs/40109793609)（提交 `d26618e9974b8e2a377d69d87d4494425b04a558`）；历史恢复版检查保留在 [approved-originals](../../review/approved-originals-2026-10-22/README.md)。
 
 ## 声音探索与提醒修复
 
