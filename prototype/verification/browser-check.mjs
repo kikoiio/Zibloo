@@ -231,9 +231,10 @@ try {
     await action(page, 'go-training');
     await capture(page, 'phone-training-setup');
     await action(page, 'start-training');
-    await page.waitForFunction(()=>document.querySelector('#phase-label')?.textContent.includes('休息一下'),{},{timeout:5000});
-    await page.click('#speed-toggle');
+    await page.waitForFunction(()=>document.querySelector('#phase-label')?.textContent.includes('休息一下'),{},{timeout:5000,polling:20});
+    await action(page, 'pause-timer');
     await capture(page, 'phone-training-rest');
+    await action(page, 'pause-timer');
     await action(page, 'skip-timer');
     assert.ok((await page.locator('#phase-label').textContent()).includes('运动中'));
     await action(page, 'end-timer');
