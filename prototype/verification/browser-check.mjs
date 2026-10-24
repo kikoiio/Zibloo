@@ -63,7 +63,7 @@ async function open(viewport, { touch = false, clock = false, reduced = false, a
   page.on('pageerror', error => errors.push(error.message));
   if (clock) await page.clock.install({ time: new Date('2026-10-22T14:00:00Z') });
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.locator('.mascot-main .zibloo-art image').waitFor();
+  await page.locator('.mascot-main .zibloo-art image').first().waitFor();
   return { context, page };
 }
 async function action(page, name) { await page.locator(`[data-action="${name}"]:visible`).click(); }
