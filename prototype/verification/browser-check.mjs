@@ -180,10 +180,11 @@ try {
     const nextPose=await page.locator('.mascot-main .zibloo-art').evaluate(el=>getComputedStyle(el).transform);
     assert.notEqual(nextPose,firstPose,`${name}: the approved artwork should visibly change pose during a short swim`);
     await page.waitForFunction(()=>Number.parseFloat(getComputedStyle(document.querySelector('.mascot-main'),'::before').opacity)>.1,{}, {timeout:1000});
+    const beforeRetarget=await position();
     await page.mouse.click(right.x,right.y);
     const retargeted=await position();
     const coords=value=>value.split(' ').map(parseFloat);
-    assert.ok(Math.abs(coords(during)[0]-coords(retargeted)[0])<12,`${name}: changing destination should not jump to the old endpoint`);
+    assert.ok(Math.abs(coords(beforeRetarget)[0]-coords(retargeted)[0])<12,`${name}: changing destination should not jump to the old endpoint`);
     await page.waitForFunction(()=>!document.querySelector('.mascot-main').classList.contains('is-swimming'));
     await clearCaption(page,`${name} after swimming`);
     await noOverflow(page,`${name} after swimming`);
