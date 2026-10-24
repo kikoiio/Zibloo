@@ -474,7 +474,7 @@ def pose_points(arm_index, clip, phase):
     if clip == 'Greeting' and arm_index == 0:
         # An entire raised S silhouette, with a wide distal hand-like wave.
         target = resample([ARMS[0][1][0],(-.85,-.06,.18),(-1.62,-.32,.68),
-                           (-2.14,-.52,1.46),(-1.88,-.67,2.30),(-1.48,-.72,2.50)])
+                           (-2.24,-.52,1.46),(-2.08,-.67,2.30),(-1.73,-.72,2.50)])
         line = [a.lerp(b,smooth(envelope*1.5)) for a,b in zip(rest,target)]
     elif clip == 'Celebrate' and arm_index in (0,3):
         targets = {
@@ -491,51 +491,48 @@ def pose_points(arm_index, clip, phase):
                (1.75,-1.32,-.03),(1.38,-1.22,.27)]}
         target = resample(targets[arm_index])
         line = [a.lerp(b,.82+.18*envelope) for a,b in zip(rest,target)]
-    initial = frame(line[0],line[1]).to_3x3()
-    local_frames = transported_frames(line,initial)
-    amplitude = {'Idle':.40,'Greeting':.46,'Focus':.24,'Celebrate':.60}[clip]
+    # Large authored poses determine the silhouette. Muscular secondary bends
+    # rotate segment tangents and integrate them, preserving each segment's
+    # length. Offsetting sampled points directly can fold a short tangent to
+    # zero during a tight curl and cause a sudden 40-degree per-frame turn.
     for j,p in enumerate(line):
-        t = j/(len(line)-1)
-        influence = smooth(t)
-        theta = phase*2*math.pi-t*1.7*math.pi+arm_index*.94
-        strength = amplitude*[1.,.85,.90,.75,.80,.90,.85,.70][arm_index]*influence
+        t=j/(len(line)-1)
+        influence=smooth(t)
+        if clip=='Celebrate':
+            anticipation=pulse(phase,.14,.14)
+            burst=pulse(phase,.46,.37)
+            p.x+=(p.x-line[0].x)*influence*(-.18*anticipation+.12*burst)
+            p.z+=influence*(-.20*anticipation+.26*burst*math.sin(arm_index*.85))
+            p.y+=.26*influence*burst*math.sin(arm_index*1.7)
+        elif clip=='Focus' and arm_index==3:
+            p.x-=.60*influence
+            p.z-=.45*influence
+    line=resample(line)
+    initial=frame(line[0],line[1]).to_3x3()
+    local_frames=transported_frames(line,initial)
+    result=[line[0].copy()]
+    amplitude={'Idle':.40,'Greeting':.44,'Focus':.24,'Celebrate':.55}[clip]
+    for j,(a,b) in enumerate(zip(line,line[1:])):
+        t=(j+.5)/(len(line)-1)
+        influence=smooth(t)
+        theta=phase*2*math.pi-t*1.7*math.pi+arm_index*.94
+        strength=amplitude*[1.,.85,.90,.75,.80,.90,.85,.70][arm_index]*influence
+        yaw=strength*math.sin(theta)
+        pitch=strength*.70*math.sin(theta+.95)
+        curl=.40*math.sin(phase*2*math.pi+arm_index*.8)*smooth((t-.45)/.55)
+        if clip=='Greeting' and arm_index==0:
+            yaw+=.52*envelope*math.sin(phase*6*math.pi)*smooth((t-.35)/.65)
+            pitch+=.20*envelope*math.cos(phase*6*math.pi)*influence
         if clip=='Focus' and arm_index in (1,2):
-            strength *= math.sin(math.pi*t)**2*.35
-        cross = local_frames[min(j,len(local_frames)-1)]
-        p += cross.col[0]*(strength*math.sin(theta))
-        p += cross.col[2]*(strength*.80*math.sin(theta+.95))
-        if clip == 'Greeting':
-            if arm_index==0:
-                tip = smooth((t-.45)/.55)
-                p.x += .66*tip*envelope*math.sin(phase*6*math.pi)
-                p.z += .25*tip*envelope*math.cos(phase*6*math.pi)
-            else:
-                p.x += (-1 if p.x<0 else 1)*.25*influence*wave
-                p.y += .30*influence*envelope*math.sin(arm_index)
-        elif clip == 'Celebrate':
-            anticipate = pulse(phase,.14,.14)
-            burst = pulse(phase,.46,.37)
-            p.x += (p.x-line[0].x)*influence*(-.22*anticipate+.16*burst)
-            p.z += influence*(-.26*anticipate+.38*burst*math.sin(arm_index*.85))
-            p.y += .40*influence*burst*math.sin(arm_index*1.7)
-        elif clip == 'Focus' and arm_index==3:
-            p.x -= .65*influence
-            p.z -= .55*influence
-        # Uncurl and re-curl the terminal half, with each arm lagging the last.
-        if not (clip=='Focus' and arm_index in (1,2)):
-            anchor = line[int((len(line)-1)*.52)].copy()
-            curl = (.40 if clip=='Idle' else .60)*math.sin(phase*2*math.pi+arm_index*.8)
-            curl *= smooth((t-.50)/.50)
-            if t>.5:
-                delta = p-anchor
-                p[:] = anchor+Matrix.Rotation(curl,3,'Y')@delta
-    # Sample uniform lengths again to avoid a single stretched segment at the tip.
-    line = resample(line)
-    rest_length = sum((b-a).length for a,b in zip(rest,rest[1:]))
-    length = sum((b-a).length for a,b in zip(line,line[1:]))
-    ratio = max(.82,min(1.16,length/rest_length))/(length/rest_length)
-    origin = line[0].copy()
-    return [origin+(p-origin)*ratio for p in line]
+            yaw=pitch=curl=0.
+        cross=local_frames[j]
+        rotation=Matrix.Rotation(yaw+curl,3,cross.col[0]) @ Matrix.Rotation(pitch,3,cross.col[2])
+        result.append(result[-1]+rotation@(b-a))
+    rest_length=sum((b-a).length for a,b in zip(rest,rest[1:]))
+    length=sum((b-a).length for a,b in zip(result,result[1:]))
+    ratio=max(.82,min(1.16,length/rest_length))/(length/rest_length)
+    origin=result[0].copy()
+    return [origin+(p-origin)*ratio for p in result]
 
 
 def eye_pose(clip,phase,index):
@@ -550,7 +547,7 @@ def eye_pose(clip,phase,index):
         return (1.05,1.12-.28*envelope-.78*wink,
                 (-.18 if index==0 else .12)*envelope,-.025*envelope,.045*envelope,wink)
     if clip=='Focus':
-        return (1.15,.48+.10*wave,(-.24 if index==0 else .24),.065,-.070,0.)
+        return (1.35,.30+.05*wave,(-.12 if index==0 else .12),.065,-.070,0.)
     happy=smooth(envelope*1.8)
     return (1.12,1.18-.45*happy,(-.12 if index==0 else .12),0.,.045*happy,happy)
 
@@ -654,6 +651,24 @@ def select_action(rig, action, frame_number):
     bpy.context.view_layer.update()
 
 
+def measure_animation(rig,actions):
+    result={}
+    for name,length in CLIPS.items():
+        previous={};largest=(0.,'')
+        for frame_number in range(1,length+2):
+            select_action(rig,actions[name],frame_number)
+            for bone in rig.pose.bones:
+                if not bone.name.startswith('Arm'):continue
+                q=bone.rotation_quaternion.normalized()
+                if bone.name in previous:
+                    angle=math.degrees(2*math.acos(min(1.,abs(q.dot(previous[bone.name])))))
+                    if angle>largest[0]:largest=(angle,bone.name)
+                previous[bone.name]=q.copy()
+        result[name]={'max_rotation_per_frame_degrees':largest[0],'bone':largest[1]}
+        assert largest[0]<30.,f'Tentacle snaps during {name}: {largest}'
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default=str(HERE/"output"))
@@ -678,6 +693,7 @@ def main():
     attach(v2.base.add_uv("Focus_Orb",(2.12,-.04,1.01),(.30,.30,.30),orb_mat,28,18),rig,"Orb")
     assets = [obj for obj in bpy.context.scene.objects if obj.type=="MESH" and obj.parent==rig]
     actions = animate(rig,chains)
+    temporal=measure_animation(rig,actions)
     ground_mat = v2.base.mat_principled("Warm_Studio",v2.linear("EFECE4"),roughness=.85)
     bpy.ops.mesh.primitive_plane_add(size=200,location=(0,0,-3.06))
     ground = bpy.context.object
@@ -750,6 +766,8 @@ def main():
     camera.location=(0,-14,2.0);v2.base.look_at(camera,(0,0,1.47))
     for clip,length in CLIPS.items():
         select_action(rig,actions[clip],1+length*.42)
+        face_center=(rig.pose.bones['Head'].matrix @ rig.data.bones['Head'].matrix_local.inverted()) @ Vector((0,0,1.55))
+        camera.location=face_center+Vector((0,-14,.20));v2.base.look_at(camera,face_center)
         scene.render.filepath=str(output/f'eyes-{clip.lower()}.png');bpy.ops.render.render(write_still=True)
     camera_data.ortho_scale=7.6
     scene.render.resolution_x=scene.render.resolution_y=768
@@ -795,6 +813,7 @@ def main():
         "topology_method":"automatic QuadriFlow cage, local junction fairing, subdivided rest surface before linear skinning",
         "junction_fairing_max_displacement":body['junction_fairing_max_displacement'],
         "source_collection":"EDITABLE_Source_Forms"}
+    report['temporal'] = temporal
     report['eye_controls'] = 'Two capsule + two closed-smile bones; gaze, opening, tilt, blink and smile are baked into each GLB action'
     report['volume'] = volume
     report['palettes'] = PALETTES
