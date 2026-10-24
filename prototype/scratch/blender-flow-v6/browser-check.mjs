@@ -151,8 +151,10 @@ try {
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.waitForFunction(()=>document.querySelector('#motion').checked);
   await page.locator('#motion').uncheck();
+  await page.clock.install({time:new Date()});
+  await page.clock.pauseAt(new Date(Date.now()+50));
   await page.locator('[data-color="rust"]').click();
-  await page.waitForTimeout(460);
+  await page.clock.runFor(620);
   const middleColors=await readColors();
   assert.equal(await page.locator('#motion').isChecked(),false,'Color transition should work while action playback is paused');
   assert.equal(middleColors.colorState.transitioning,true);
@@ -167,6 +169,7 @@ try {
   const spatialSpread=Math.max(...spatialFractions)-Math.min(...spatialFractions);
   assert(spatialSpread>.25,`Color wave applied uniformly instead of spreading: ${spatialSpread}`);
   await page.screenshot({path:'output/browser-color-gradient.png',fullPage:true,timeout:15000});
+  await page.clock.resume();
   await page.waitForFunction(()=>!window.modelStudy.colorState.transitioning);
   assert.equal(await page.evaluate(()=>window.modelStudy.currentColor),'rust');
   observations.color_transition={progress:middleColors.colorState.progress,paused_action:true,intermediate_body_update:true,spatial_fraction_spread:spatialSpread};
