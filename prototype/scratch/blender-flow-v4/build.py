@@ -244,8 +244,9 @@ def make_rig(body, samples):
         # Below the neck this is already the connected arm surface. A radial
         # proximity gate there would leave distal surface vertices attached to
         # Root, creating spikes when the arm folds into the Focus cradle.
-        if co.z < .45:
-            surface = 1.
+        neck_gate = max(0.,min(1.,(co.z-.35)/.5))
+        neck_gate = neck_gate*neck_gate*(3-2*neck_gate)
+        surface = 1-(1-surface)*neck_gate
         fade = max(0., min(1., max((.18-co.z)/.55,(math.hypot(co.x,co.y)-.38)/.65)))
         arm_weight = surface*fade
         # Cubic weights vary continuously between segment centers; a nearest
