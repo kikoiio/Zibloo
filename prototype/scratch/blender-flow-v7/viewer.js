@@ -200,6 +200,17 @@ async function playColorDemo(){
   demoRunning=false;updateColorControls();
   return true;
 }
+const seek = phase => {
+  if(!active)return;
+  motion.checked=false;
+  const clip=active.getClip();
+  mixer.stopAllAction();
+  active=mixer.clipAction(clip).reset().stopFading().setEffectiveWeight(1).setEffectiveTimeScale(1).play();
+  active.time=Math.min(clip.duration-.00001,clip.duration*clamp01(phase));
+  mixer.update(0);
+  document.querySelector('#pose-time').value=String(Math.round(clamp01(phase)*100));
+  dirty=true;
+};
 const emotionLabels={Idle:'放松 · 自然眨眼与游移视线',Greeting:'亲近 · 抬眼与俏皮眨眼',Focus:'专注 · 眯眼并注视光珠',Celebrate:'开心 · 两只弯弯的笑眼'};
 const select = (name,fade=.25) => {
   const clip = clips.find(c=>c.name===name); if (!clip) throw Error(`Missing animation: ${name}`);
@@ -218,14 +229,14 @@ new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('zibloo_flow_v7.glb',glt
   select('Idle',0);status.textContent='拖动旋转 · 点击下方切换动作';
   window.modelStudy={model,mixer,clips,select,renderer,camera,setColor,playColorDemo,
     loadReference:()=>new GLTFLoader().loadAsync('zibloo_flow_v7_source.glb'),
-    setView,seek:phase=>{motion.checked=false;active.time=active.getClip().duration*phase;mixer.update(0);dirty=true;},get current(){return current;},get currentColor(){return currentColor;},get colorState(){return colorStateSnapshot();}};
+    setView,seek,get current(){return current;},get currentColor(){return currentColor;},get colorState(){return colorStateSnapshot();}};
 },undefined,error=>{status.textContent='角色加载失败，请刷新重试';console.error(error);});
 document.querySelectorAll('[data-clip]').forEach(button=>button.addEventListener('click',()=>{if(mixer)select(button.dataset.clip);}));
 document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
 colorButtons.forEach(button=>button.addEventListener('click',()=>setColor(button.dataset.color)));
 colorDemoButton.addEventListener('click',()=>playColorDemo());
 document.querySelector('#pose-time').addEventListener('input',event=>window.modelStudy?.seek(Number(event.target.value)/100));
-motion.addEventListener('change',()=>{if(mixer&&!motion.checked){active.time=active.getClip().duration*.42;mixer.update(0);}dirty=true;});
+motion.addEventListener('change',()=>{if(mixer&&!motion.checked)seek(active.time/active.getClip().duration);dirty=true;});
 reduced.addEventListener('change',()=>{
   motion.checked=!reduced.matches;motion.dispatchEvent(new Event('change'));
   if(reduced.matches){stopColorDemo();if(colorTargets[targetColor])setColor(targetColor,{fromDemo:true});}
@@ -239,5 +250,5 @@ new ResizeObserver(()=>{
   camera.position.copy(controls.target).addScaledVector(offset,viewDistance/Math.min(1,camera.aspect));
   camera.updateProjectionMatrix();controls.update();dirty=true;
 }).observe(stage);
-function frame(){requestAnimationFrame(frame);const delta=Math.min(.05,clock.getDelta());if(document.hidden)return;if(mixer&&motion.checked){mixer.update(delta);dirty=true;}updateColorTransition(performance.now());controls.update();if(dirty){renderer.render(scene,camera);dirty=false;}}
+function frame(){requestAnimationFrame(frame);const delta=Math.min(.05,clock.getDelta());if(document.hidden)return;if(mixer&&motion.checked){mixer.update(delta);document.querySelector('#pose-time').value=String(Math.round(active.time/active.getClip().duration*100));dirty=true;}updateColorTransition(performance.now());controls.update();if(dirty){renderer.render(scene,camera);dirty=false;}}
 frame();

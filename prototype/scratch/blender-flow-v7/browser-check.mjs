@@ -113,7 +113,7 @@ try {
       result[clip.name]=[];
       for(const phase of [0,.21,.42,.5,.78]){
         mixer.stopAllAction();mixer.clipAction(clip).reset().play();mixer.setTime(clip.duration*phase);model.updateMatrixWorld(true);
-        result[clip.name].push({phase,eyes:eyes.map(eye=>{
+        result[clip.name].push({phase,controls:eyes[0].skeleton.bones.filter(bone=>/^(Eye|Smile)_/.test(bone.name)).map(bone=>({name:bone.name,scale:bone.scale.toArray()})),eyes:eyes.map(eye=>{
           eye.skeleton.update();const points=[];
           for(let i=0;i<eye.geometry.attributes.position.count;i++){
             const p=eye.position.clone().fromBufferAttribute(eye.geometry.attributes.position,i);
@@ -130,6 +130,28 @@ try {
     const heights=states.flatMap(state=>state.eyes.map(span=>span[1]));
     assert(Math.max(...heights)-Math.min(...heights)>.025,`${name}: eye shape is static`);
   }
+  const eyeControl=(clip,phaseIndex,name)=>observations.eye_poses[clip][phaseIndex].controls.find(control=>control.name===name).scale;
+  const idleOpen=eyeControl('Idle',0,'Eye_0'),idleBlink=eyeControl('Idle',1,'Eye_0');
+  assert(idleBlink[1]<idleOpen[1]*.3,'Idle did not blink relative to the head');
+  assert(eyeControl('Focus',0,'Eye_0')[1]<idleOpen[1]*.65,'Focus did not squint relative to the head');
+  assert(Math.max(...eyeControl('Celebrate',0,'Smile_0'))<.01,'Smile visible at neutral start');
+  assert(Math.min(...eyeControl('Celebrate',3,'Smile_0'))>.95,'Celebrate did not reveal the closed smiling eye');
+  assert(Math.max(...eyeControl('Celebrate',3,'Eye_0'))<.01,'Open capsule stayed visible over closed smiling eye');
+  assert(Math.min(...eyeControl('Greeting',2,'Smile_1'))>.95,'Greeting did not wink');
+  observations.seek_during_fade_error=await page.evaluate(()=>{
+    const {model,mixer,select,seek}=window.modelStudy;
+    document.querySelector('#motion').checked=true;
+    select('Idle',0);mixer.update(.3);select('Celebrate',.5);mixer.update(.05);seek(.42);
+    model.updateMatrixWorld(true);
+    let body;model.traverse(obj=>{if(obj.isSkinnedMesh&&obj.geometry.attributes.position.count>5000)body=obj;});
+    body.skeleton.update();const actual=[];
+    for(let i=0;i<body.geometry.attributes.position.count;i+=53){
+      const p=body.position.clone().fromBufferAttribute(body.geometry.attributes.position,i);
+      body.applyBoneTransform(i,p);p.applyMatrix4(body.matrixWorld);actual.push(p.toArray());
+    }
+    return Math.max(...actual.map((p,i)=>Math.hypot(...p.map((n,j)=>n-window.expectedStudyPoses.Celebrate[i][j]))));
+  });
+  assert(observations.seek_during_fade_error<.001,'Seeking retained a crossfaded pose');
   await page.locator('[data-view="eyes"]').click();
   for(const name of ['Idle','Greeting','Focus','Celebrate']){
     await page.locator(`[data-clip="${name}"]`).click();
