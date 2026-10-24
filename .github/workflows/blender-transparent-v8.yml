@@ -30,7 +30,7 @@ jobs:
           printf '%s  blender.tar.xz\n' "$expected" | sha256sum --check -
           tar -xf blender.tar.xz
           sudo apt-get update -qq
-          sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1
+          sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1 libegl1 libopengl0
       - name: Verify archived v8 model provenance
         run: |
           cd prototype/scratch/blender-flow-v8/output
