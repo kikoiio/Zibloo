@@ -5,6 +5,10 @@ const output=path.join(__dirname,'assets');
 const sources={
  'assets/reference-B2.png':`data:image/png;base64,${fs.readFileSync(path.join(output,'reference-B2.png')).toString('base64')}`,
  'assets/reference-C3.png':`data:image/png;base64,${fs.readFileSync(path.join(output,'reference-C3.png')).toString('base64')}`,
+ ...Object.fromEntries(['stroke-a','stroke-b','stroke-c','stroke-d','greet'].map(name=>[
+   `assets/frames/${name}.png`,
+   `data:image/png;base64,${fs.readFileSync(path.join(output,'frames',`${name}.png`)).toString('base64')}`,
+ ])),
 };
 function embedded(markup){for(const [url,data] of Object.entries(sources))markup=markup.replaceAll(`href="${url}"`,`href="${data}"`);return markup;}
 fs.writeFileSync(path.join(output,'zibloo-character.svg'),embedded(Zibloo.svg()));
