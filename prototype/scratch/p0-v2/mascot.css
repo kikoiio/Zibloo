@@ -25,7 +25,7 @@
 .character-caption small{font-size:10px;color:#648c80}
 .character-status{display:inline-flex;align-items:center;gap:6px}
 .character-status:before{content:'';width:5px;height:5px;border-radius:50%;background:#7bb99b}
-.swim-area{position:absolute;inset:0 0 50px;width:100%;border-radius:28px;cursor:crosshair;z-index:0}
+.swim-area{position:absolute;inset:0 0 50px;width:100%;cursor:crosshair;z-index:0}
 .home-stage .mascot-main{transition-property:translate;transition-timing-function:cubic-bezier(.25,.1,.25,1)}
 .mascot-main>.live-zibloo{rotate:var(--swim-lean,0deg);transition:rotate .2s ease}
 .caption-actions{display:flex;align-items:center;justify-content:center;gap:12px}

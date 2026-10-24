@@ -98,7 +98,8 @@
       if(directions[event.key]) {
         event.preventDefault();
         const [x,y]=directions[event.key];
-        move({x:target.x+x,y:target.y+y},false);
+        const current=getComputedStyle(mover).translate.split(' ').map(parseFloat);
+        move({x:(current[0]||0)+x,y:(current[1]||0)+y},false);
       }else if(event.key==='Home'||event.key==='Escape') {
         event.preventDefault();
         move({x:0,y:0},false);
