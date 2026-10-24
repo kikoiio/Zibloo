@@ -9,11 +9,13 @@ SOURCE = ROOT / 'output' / 'zibloo_flow_v8.blend'
 OUT = HERE / 'frames'
 OUT.mkdir(parents=True, exist_ok=True)
 
-# Keep only the character rig family, lights, and camera visible. The archived
-# review scene includes unnamed studio geometry that otherwise blocks alpha.
-character_prefixes = ('Zibloo_', 'Source_', 'Eye_', 'HappyEye_', 'Key', 'Fill', 'Rim')
+# Show only the rig and its descendants (skin, eyes) plus lights and cameras.
+# The archived review scene also contains source sketch curves and preview
+# cages that render as opaque geometry if left visible.
+rig = bpy.data.objects['Zibloo_Rig']
+visible = {rig, *rig.children_recursive}
 for item in bpy.data.objects:
-    keep = item.type in {'LIGHT', 'CAMERA', 'ARMATURE'} or item.name.startswith(character_prefixes)
+    keep = item in visible or item.type in {'LIGHT', 'CAMERA'}
     item.hide_render = not keep
     item.hide_viewport = not keep
 
@@ -57,13 +59,9 @@ for clip, action in clips.items():
     end = int(action.frame_range[1])
     frames = [round(1 + i * (end - 1) / 16) for i in range(16)]
     sampled[clip] = frames
-    # Assign action to the rendered rig through the scene's animation data.
-    if scene.animation_data is None:
-        scene.animation_data_create()
-    scene.animation_data.action = None
-    for obj in bpy.context.scene.objects:
-        if obj.animation_data is not None and action in {a.action for a in obj.animation_data.nla_tracks if a.action}:
-            obj.animation_data.action = action
+    if rig.animation_data is None:
+        rig.animation_data_create()
+    rig.animation_data.action = action
     for frame in frames:
         scene.frame_set(frame)
         scene.render.filepath = str(target / f'{frames.index(frame):02d}.png')

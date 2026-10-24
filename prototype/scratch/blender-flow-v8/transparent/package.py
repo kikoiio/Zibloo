@@ -9,7 +9,16 @@ OUT = HERE / 'sheets'
 OUT.mkdir(exist_ok=True)
 report = {'sheets': {}}
 for clip in ('idle', 'focus', 'greeting', 'celebrate'):
-    images = [Image.open(FRAMES / clip / f'{i:02d}.png').convert('RGBA') for i in range(16)]
+    images = []
+    for i in range(16):
+        image = Image.open(FRAMES / clip / f'{i:02d}.png').convert('RGBA')
+        # Cycles leaves stray RGB under alpha 0; clear it to avoid white fringes.
+        pixels = image.load()
+        for y in range(image.height):
+            for x in range(image.width):
+                if pixels[x, y][3] < 8:
+                    pixels[x, y] = (0, 0, 0, 0)
+        images.append(image)
     tile = 640
     canvas = 648
     sheet = Image.new('RGBA', (canvas * 4, canvas * 4), (0, 0, 0, 0))
