@@ -573,7 +573,13 @@ def pose_points(arm_index, clip, phase):
     length=sum((b-a).length for a,b in zip(result,result[1:]))
     ratio=max(.82,min(1.16,length/rest_length))/(length/rest_length)
     origin=result[0].copy()
-    return [origin+(p-origin)*ratio for p in result]
+    result=[origin+(p-origin)*ratio for p in result]
+    if clip=='Focus' and arm_index in (1,2):
+        # Length limiting must not undo the cradle's endpoint constraint.
+        correction=line[-1]-result[-1]
+        result=[p+correction*smooth(i/SEGMENTS) for i,p in enumerate(result)]
+        assert (result[-1]-line[-1]).length<1e-6
+    return result
 
 
 def eye_pose(clip,phase,index):
