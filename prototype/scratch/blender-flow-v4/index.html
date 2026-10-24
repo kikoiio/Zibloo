@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zibloo · 3D 形体精修</title>
+<style>
+@font-face{font-family:ZiblooReview;src:url(review-font.woff2);font-display:swap}
+*{box-sizing:border-box}body{margin:0;background:#f3f0e8;color:#183d3b;font:16px/1.6 ZiblooReview,system-ui,sans-serif}main{max-width:1080px;margin:auto;padding:36px 24px}header{display:flex;justify-content:space-between;align-items:center;gap:20px}h1{font-size:28px;letter-spacing:-1px;margin:0}small,.note{color:#627d76}.stage{height:min(66vh,640px);min-height:330px;border-radius:32px;margin-top:24px;background:radial-gradient(ellipse at 50% 40%,#fffdf5,#e1e8dd);position:relative;overflow:hidden}canvas{display:block;width:100%;height:100%;touch-action:none}.status{position:absolute;bottom:12px;left:24px;font-size:13px;color:#55736d}.controls{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:22px 0}button,a.link{border:1px solid #b9cec3;border-radius:24px;background:#fffdf5;color:inherit;padding:10px 22px;font:inherit;cursor:pointer}button[aria-pressed=true]{background:#236e69;color:white;border-color:#236e69}button:focus-visible,a:focus-visible{outline:3px solid #4aada3;outline-offset:3px}label{display:flex;align-items:center;gap:8px;justify-content:center}.note{text-align:center;font-size:14px}.downloads{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:22px}.link{text-decoration:none}.previews{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}.previews img{width:100%;border-radius:16px}.previews a{color:inherit;text-decoration:none;font-size:14px;text-align:center}input{accent-color:#236e69}@media(max-width:600px){main{padding:20px 12px}header{display:block}h1{font-size:24px}.previews{grid-template-columns:repeat(2,1fr)}button{padding:10px 16px}}
+</style>
+<main>
+<header><div><h1>zibloo · 形体精修 v4</h1><small>静候、招呼、专注与庆祝</small></div><small>拖动角色，观察侧面</small></header>
+<div class="stage"><canvas aria-label="可旋转的 Zibloo 三维动作预览"></canvas><div class="status" role="status">正在加载角色…</div></div>
+<div class="controls" aria-label="角色动作">
+<button data-clip="Idle" aria-pressed="true">安静陪伴</button><button data-clip="Greeting" aria-pressed="false">招手问候</button><button data-clip="Focus" aria-pressed="false">专注托珠</button><button data-clip="Celebrate" aria-pressed="false">欢愉达成</button>
+</div>
+<div class="controls" aria-label="观察视角"><button data-view="hero" aria-pressed="true">主视角</button><button data-view="front" aria-pressed="false">正面</button><button data-view="side" aria-pressed="false">侧面</button><button data-view="back" aria-pressed="false">背面</button></div>
+<label><input id="motion" type="checkbox" checked>播放动作</label>
+<p class="note">触手连接与变形研究。切换视角，观察根部连接和前后层次。</p>
+<div class="downloads"><a class="link" href="comparison.jpg">对比 v3 / v4</a><a class="link" href="zibloo_flow_v4.blend">Blender 工程</a><a class="link" href="zibloo_flow_v4.glb">GLB 模型</a></div>
+<div class="previews"><a href="idle.gif"><img src="idle.png" alt="待机悬浮动作">安静陪伴</a><a href="greeting.gif"><img src="greeting.png" alt="招手动作">招手问候</a><a href="focus.gif"><img src="focus.png" alt="托举光珠动作">专注托珠</a><a href="celebrate.gif"><img src="celebrate.png" alt="庆祝动作">欢愉达成</a></div>
+</main>
+<script type="module" src="viewer.js"></script>
+</html>
