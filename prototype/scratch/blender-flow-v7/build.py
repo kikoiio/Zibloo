@@ -13,6 +13,7 @@ import sys
 import bpy
 from mathutils import Matrix, Vector
 from mathutils.kdtree import KDTree
+from mathutils.bvhtree import BVHTree
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("flow2", HERE.parent / "blender-flow-v2/build.py")
@@ -61,6 +62,22 @@ def source_arms():
 
 ARMS = source_arms()
 EYE_CENTERS = [Vector((x*HEAD_WIDTH_SCALE,-1.045,1.43)) for x in (-.34,.30)]
+FACE_TREE = None
+
+
+def face_front(x,z):
+    hit,_,_,_=FACE_TREE.ray_cast(Vector((x,-6,z)),Vector((0,1,0)))
+    assert hit is not None, f'Eye left the mantle surface: {x}, {z}'
+    return hit.y
+
+
+def calibrate_eyes(body):
+    global FACE_TREE
+    FACE_TREE=BVHTree.FromPolygons([v.co for v in body.data.vertices],
+                                  [list(p.vertices) for p in body.data.polygons])
+    for center in EYE_CENTERS:
+        center.y=face_front(center.x,center.z)-.036
+
 
 
 
@@ -546,7 +563,7 @@ def animate_eyes(rig,clip,phase):
             bone=rig.pose.bones[f'{kind}_{index}']
             factor=max(.001,visibility)
             # Eye-plane transforms: global X/Z; depth follows the curved mantle.
-            gaze=Vector((gaze_x,-.014,gaze_z))
+            gaze=Vector((gaze_x,face_front(center.x+gaze_x,center.z+gaze_z)-face_front(center.x,center.z)-.004,gaze_z))
             scale=(width*factor,factor, max(.07,opening)*factor) if kind=='Eye' else (factor,factor,factor)
             transform=Matrix.Translation(center+gaze) @ Matrix.Rotation(lean,4,'Y') @ Matrix.Diagonal((*scale,1)) @ Matrix.Translation(-center)
             bone.matrix=head @ transform @ rig.data.bones[bone.name].matrix_local
@@ -557,7 +574,9 @@ def make_smile(center,material,rig,bone_name):
     points=[];radii=[]
     for i in range(13):
         t=i/12
-        points.append(tuple(center+Vector((-.14+.28*t,-.040,.070*math.sin(math.pi*t)-.015))))
+        x=center.x-.14+.28*t
+        z=center.z+.070*math.sin(math.pi*t)-.015
+        points.append((x,face_front(x,z)-.014,z))
         radii.append(.033 if i not in (0,12) else .020)
     vertices,faces,_=sweep(points,radii,sides=12,steps=2,depth=.75)
     obj=v2.mesh_object('HappyEye',vertices,faces)
@@ -643,6 +662,7 @@ def main():
     output.mkdir(parents=True,exist_ok=True)
     v2.base.clear_scene()
     body, source, samples = build_skin()
+    calibrate_eyes(body)
     rig, chains, weight_error = make_rig(body,samples)
     volume = volume_measurements(body)
     landmark_indices = list(range(0,len(body.data.vertices),max(1,len(body.data.vertices)//96)))[:96]

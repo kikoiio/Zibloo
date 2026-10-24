@@ -1,5 +1,31 @@
-# Zibloo v7 — motion and eye expression study
+# Zibloo v7：更大的动作与眼神
 
-Isolated, disposable Blender prototype. Preserves the v6 volume, continuous skin weights and four color controls. Adds full gesture poses, staged anticipation/release, gaze, blinking, squinting and closed smiling eyes. All eye transforms are baked in the same four GLB actions.
+独立、可丢弃的动作评审原型，保留 v6 的立体体积、青碧/薄荷双色和变色实验。它用来判断动作与情绪是否足够清晰，不是正式制作资产。
 
-Cloud rendering and browser verification use `.github/workflows/blender-expression-v7.yml`. Results and visual review will be recorded after the run. This automatic QuadriFlow cage is not final production topology.
+## 本轮变化
+
+| 动作 | 身体与腕足 | 眼睛 |
+| --- | --- | --- |
+| Idle | 更明显的悬浮、前后错开的行进弯曲、末端回卷 | 视线游移、两次自然眨眼 |
+| Greeting | 主腕足高举成 S 形，末端横向挥动，其余腕足延迟跟随 | 抬眼、左右开合差异、单眼眨眼 |
+| Focus | 前探、前腕环抱光珠，后腕保持缓慢游动 | 缩短眼形，视线朝右下方光珠集中 |
+| Celebrate | 先收拢蓄势，随后上跃并展开两条主腕足，再恢复 | 两只闭合弯眼，随动作逐步展开与恢复 |
+
+眼神通过 4 个新增骨骼控制，眼球、高光和闭合笑眼均跟随 Head，动画直接烘焙进同一套四个 GLB 动作。没有嘴、眉毛、吸盘或写实皮肤。皮肤变色仍由评审页实时改变顶点色；Blender 工程另有 `skin_stage` 0–3 控制，基础 GLB 保存青碧配色。
+
+## 查看
+
+预览页支持四动作、四配色、渐变演示、正侧背面、“眼神特写”和动作进度条。进度条会暂停在所选姿势；切换中暂停会取消混合，显示所选动作的实际姿势。
+
+- `output/expressions.jpg`：相同机位的四种眼神。
+- `output/motion-keys.jpg`：每个动作的五个关键时刻。
+- `output/<action>.gif`：压缩动作示意；真实连续动作请看预览页。
+- `output/zibloo_flow_v7.blend`、`output/zibloo_flow_v7.glb`：工程与网页模型。
+
+## 生成与验证
+
+使用已授权的公开仓库 GitHub Actions Ubuntu runner：`.github/workflows/blender-expression-v7.yml`。Blender 4.5.3 LTS、CPU 两线程；本机不运行 Blender、依赖安装或浏览器自动化。
+
+模型与动画生成后，检查连续封闭外皮、权重归一、动作循环、Blender/GLB 变形一致性、相对头部的眨眼/眯眼/笑眼控制、暂停切换、颜色渐变及手机取景。视觉观察记录与实际运行结果待渲染完成补入。
+
+保留自动 QuadriFlow 控制笼及源曲线。人工整理根部面环、完善局部权重和生产级动画控制器仍是后续工作。

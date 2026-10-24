@@ -277,13 +277,20 @@ try {
       const {model}=window.modelStudy;
       model.updateMatrixWorld(true);
       let body;model.traverse(obj=>{if(obj.isSkinnedMesh&&obj.geometry.attributes.position.count>5000)body=obj;});
-      body.skeleton.update();let x=0,y=0;
+      const {mixer,clips,current}=window.modelStudy;
+      const clip=clips.find(clip=>clip.name===current);
+      let x=0,y=0;
       const camera=window.modelStudy.camera;
-      for(let i=0;i<body.geometry.attributes.position.count;i+=17){
-        const p=body.position.clone().fromBufferAttribute(body.geometry.attributes.position,i);
-        body.applyBoneTransform(i,p);p.applyMatrix4(body.matrixWorld).project(camera);
-        x=Math.max(x,Math.abs(p.x));y=Math.max(y,Math.abs(p.y));
+      for(let sample=0;sample<24;sample++){
+        mixer.stopAllAction();mixer.clipAction(clip).reset().play();mixer.setTime(clip.duration*sample/24);
+        model.updateMatrixWorld(true);body.skeleton.update();
+        for(let i=0;i<body.geometry.attributes.position.count;i+=17){
+          const p=body.position.clone().fromBufferAttribute(body.geometry.attributes.position,i);
+          body.applyBoneTransform(i,p);p.applyMatrix4(body.matrixWorld).project(camera);
+          x=Math.max(x,Math.abs(p.x));y=Math.max(y,Math.abs(p.y));
+        }
       }
+      window.modelStudy.select(current,0);
       return {x,y};
     });
     assert(extent.x<.96&&extent.y<.96,`Mobile ${name} cropped: ${JSON.stringify(extent)}`);
