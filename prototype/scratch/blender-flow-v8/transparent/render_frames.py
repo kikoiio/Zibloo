@@ -37,10 +37,13 @@ scene.render.threads = 2
 camera = scene.camera
 if camera is None:
     raise RuntimeError('v8 blend has no active camera')
+# Restore the reviewed v8 framing; the character stays fully inside all clips.
+from mathutils import Vector
 camera.data.type = 'ORTHO'
 camera.data.ortho_scale = 7.6
-camera.location = (3.0, -12.0, 1.35)
-camera.rotation_euler = (1.35, 0.0, 0.0)
+camera.location = (3.0, -14.0, 3.1)
+target = Vector((0.0, 0.0, 0.15))
+camera.rotation_euler = (target - camera.location).to_track_quat('-Z', 'Y').to_euler()
 
 clips = {}
 for action in bpy.data.actions:
