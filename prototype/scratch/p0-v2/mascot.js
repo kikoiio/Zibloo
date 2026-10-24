@@ -113,6 +113,7 @@
     observer.observe(stage);
     observer.observe(mover);
     observer.observe(caption);
+    move(target,false);
     return {stage,settle,dispose:()=>{observer.disconnect();settle();}};
   }
   globalThis.Zibloo={svg,logo,refresh,greet};
