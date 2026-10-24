@@ -257,7 +257,7 @@ try {
     await capture(page, 'phone-training-rest');
     await action(page, 'pause-timer');
     await action(page, 'skip-timer');
-    assert.ok((await page.locator('#phase-label').textContent()).includes('运动中'));
+    await page.waitForFunction(()=>document.querySelector('#phase-label')?.textContent.includes('运动中'),{},{timeout:5000,polling:20});
     await action(page, 'end-timer');
     await action(page, 'confirm-end');
     await nav(page, 'history');
