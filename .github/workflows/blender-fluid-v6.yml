@@ -1,0 +1,71 @@
+name: Blender fluid motion and color v6
+on:
+  push:
+    branches: [codex/blender-flow-v2]
+    paths:
+      - 'prototype/scratch/blender-flow-v6/build.py'
+      - 'prototype/scratch/blender-flow-v6/**'
+      - '.github/workflows/blender-fluid-v6.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: blender-fluid-v6
+  cancel-in-progress: false
+jobs:
+  model-and-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TMPDIR: ${{ github.workspace }}/.tmp
+      OMP_NUM_THREADS: '2'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Install official Blender on the cloud runner
+        run: |
+          mkdir -p "$TMPDIR" tools
+          curl --fail --location --retry 2 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz -o tools/blender.tar.xz
+          curl --fail --location --retry 2 https://download.blender.org/release/Blender4.5/blender-4.5.3.sha256 -o tools/blender.sha256
+          cd tools
+          expected=$(awk '$2 == "blender-4.5.3-linux-x64.tar.xz" {print $1}' blender.sha256)
+          test -n "$expected"
+          printf '%s  blender.tar.xz\n' "$expected" | sha256sum --check -
+          tar -xf blender.tar.xz
+          sudo apt-get update -qq
+          sudo apt-get install -y libxrender1 libxi6 libxfixes3 libxkbcommon0 libsm6 libgl1
+      - name: Download previous volume reference
+        run: gh run download 40048894899 -R kikoiio/Zibloo -n blender-flow-v5 -D prototype/scratch/blender-flow-v6/previous
+      - name: Build slender form, traveling bends, color controls and CPU previews
+        run: tools/blender-4.5.3-linux-x64/blender -b -t 2 --python-exit-code 1 --python prototype/scratch/blender-flow-v6/build.py
+      - name: Render previous model at the same true side camera
+        run: tools/blender-4.5.3-linux-x64/blender -b -t 2 --python-exit-code 1 --python prototype/scratch/blender-flow-v6/render_baseline.py
+      - name: Package animation previews and standalone viewer
+        working-directory: prototype/scratch/blender-flow-v6
+        run: |
+          python3 -m venv "$TMPDIR/preview-python"
+          "$TMPDIR/preview-python/bin/pip" install --disable-pip-version-check Pillow
+          "$TMPDIR/preview-python/bin/python" package_output.py
+          npm install --ignore-scripts --no-audit --no-fund
+          node optimize.mjs
+          python3 prepare_font.py
+          npx esbuild viewer.js --bundle --format=esm --minify --outfile=output/viewer.js
+      - name: Review the exported GLB in one cloud browser
+        timeout-minutes: 6
+        working-directory: prototype/scratch/blender-flow-v6
+        run: |
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            timeout --kill-after=10s 150s npx playwright install chromium --only-shell
+          fi
+          timeout --kill-after=10s 240s node browser-check.mjs
+      - name: Preserve model, animations, screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: blender-flow-v6
+          path: prototype/scratch/blender-flow-v6/output/
+          retention-days: 7
