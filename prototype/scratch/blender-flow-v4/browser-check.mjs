@@ -17,15 +17,22 @@ try {
   await page.evaluate(()=>document.fonts.ready);
   await page.locator('#motion').uncheck();
   const landmarks=JSON.parse(await readFile('output/blender-landmarks.json','utf8'));
-  const parity=await page.evaluate(reference=>{
+  const parity=await page.evaluate(async reference=>{
     const {model,mixer,clips}=window.modelStudy;
     let body;model.traverse(obj=>{if(obj.isSkinnedMesh&&obj.geometry.attributes.position.count>5000)body=obj;});
+    const source=await window.modelStudy.loadReference();
+    let sourceBody;source.scene.traverse(obj=>{if(obj.isSkinnedMesh&&obj.geometry.attributes.position.count>5000)sourceBody=obj;});
+    const boneName=body.skeleton.bones[0].name;
+    const sourceBone=sourceBody.skeleton.bones.findIndex(bone=>bone.name===boneName);
+    // Position quantization is folded into inverse-bind matrices for skins.
+    // Recover that decoding transform before matching original rest points.
+    const decode=sourceBody.skeleton.boneInverses[sourceBone].clone().invert().multiply(body.skeleton.boneInverses[0]);
     model.updateMatrixWorld(true);
     const positions=body.geometry.attributes.position;
     const mapping=reference.rest.map(point=>{
       let nearest=0,distance=Infinity;
       for(let i=0;i<positions.count;i++){
-        const p=body.position.clone().fromBufferAttribute(positions,i).applyMatrix4(body.bindMatrix);
+        const p=body.position.clone().fromBufferAttribute(positions,i).applyMatrix4(decode);
         const d=Math.hypot(...p.toArray().map((n,j)=>n-point[j]));
         if(d<distance){nearest=i;distance=d;}
       }

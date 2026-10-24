@@ -229,9 +229,7 @@ def make_rig(body, samples):
         for segment, (name,a,b) in enumerate(chain):
             direction = b-a
             segments.append((arm_index,segment,a,direction,direction.length_squared))
-    all_weights = []
-    for vertex in body.data.vertices:
-        co = vertex.co
+    def continuous_weights(co):
         nearest = None
         for candidate_arm,candidate_segment,a,direction,length_squared in segments:
             fraction = max(0.,min(1.,(co-a).dot(direction)/length_squared))
@@ -243,6 +241,11 @@ def make_rig(body, samples):
         widths = ARMS[arm_index][2]
         radius = sum(widths)/len(widths)
         surface = max(0.,min(1.,(1.6-distance/radius)/.6))
+        # Below the neck this is already the connected arm surface. A radial
+        # proximity gate there would leave distal surface vertices attached to
+        # Root, creating spikes when the arm folds into the Focus cradle.
+        if co.z < .45:
+            surface = 1.
         fade = max(0., min(1., max((.18-co.z)/.55,(math.hypot(co.x,co.y)-.38)/.65)))
         arm_weight = surface*fade
         # Cubic weights vary continuously between segment centers; a nearest
@@ -264,7 +267,8 @@ def make_rig(body, samples):
         weights = dict(sorted(weights.items(),key=lambda item:item[1],reverse=True)[:4])
         total = sum(weights.values())
         weights = {name:weight/total for name,weight in weights.items()}
-        all_weights.append(weights)
+        return weights
+    all_weights = [continuous_weights(vertex.co) for vertex in body.data.vertices]
     neighbors = adjacency(body.data)
     for _ in range(8):
         previous = all_weights
@@ -289,7 +293,14 @@ def make_rig(body, samples):
     # same subdivided rest surface with the same four normalized influences.
     max_error = 0.
     for vertex in body.data.vertices:
-        weights = sorted(((g.group,g.weight) for g in vertex.groups),key=lambda item:item[1],reverse=True)[:4]
+        if root_influence(vertex.co)<.01:
+            # Re-evaluate the continuous four-bone field on the final surface.
+            # Truncating interpolated cage weights would create tiny ridges
+            # where five or six interpolated bone influences trade rank.
+            direct = continuous_weights(vertex.co)
+            weights = [(groups[name].index,weight) for name,weight in direct.items()]
+        else:
+            weights = sorted(((g.group,g.weight) for g in vertex.groups),key=lambda item:item[1],reverse=True)[:4]
         total = sum(weight for _,weight in weights)
         for group in body.vertex_groups:
             group.remove([vertex.index])

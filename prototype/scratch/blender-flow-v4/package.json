@@ -1,5 +1,5 @@
 {
-  "name": "zibloo-model-study-v3",
+  "name": "zibloo-model-study-v4",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -9,5 +9,8 @@
     "@gltf-transform/functions": "4.2.1",
     "meshoptimizer": "0.24.0"
   },
-  "devDependencies": { "esbuild": "0.25.11", "playwright": "1.64.1" }
+  "devDependencies": {
+    "esbuild": "0.25.11",
+    "playwright": "1.64.1"
+  }
 }

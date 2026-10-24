@@ -45,7 +45,9 @@ const select = (name,fade=.25) => {
 new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('zibloo_flow_v4.glb',gltf=>{
   model=gltf.scene;clips=gltf.animations;scene.add(model);mixer=new THREE.AnimationMixer(model);
   select('Idle',0);status.textContent='拖动旋转 · 点击下方切换动作';
-  window.modelStudy={model,mixer,clips,select,renderer,camera,get current(){return current;}};
+  window.modelStudy={model,mixer,clips,select,renderer,camera,
+    loadReference:()=>new GLTFLoader().loadAsync('zibloo_flow_v4_source.glb'),
+    get current(){return current;}};
 },undefined,error=>{status.textContent='角色加载失败，请刷新重试';console.error(error);});
 document.querySelectorAll('[data-clip]').forEach(button=>button.addEventListener('click',()=>{if(mixer)select(button.dataset.clip);}));
 document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
