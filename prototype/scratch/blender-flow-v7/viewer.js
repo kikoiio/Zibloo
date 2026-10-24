@@ -231,8 +231,8 @@ new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('zibloo_flow_v7.glb',glt
     loadReference:()=>new GLTFLoader().loadAsync('zibloo_flow_v7_source.glb'),
     setView,seek,get current(){return current;},get currentColor(){return currentColor;},get colorState(){return colorStateSnapshot();}};
 },undefined,error=>{status.textContent='角色加载失败，请刷新重试';console.error(error);});
-document.querySelectorAll('[data-clip]').forEach(button=>button.addEventListener('click',()=>{if(mixer)select(button.dataset.clip);}));
-document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
+document.querySelectorAll('[data-clip]').forEach(button=>button.addEventListener('click',()=>{if(mixer){select(button.dataset.clip);stage.scrollIntoView({block:'center',behavior:'auto'});}}));
+document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>{setView(button.dataset.view);stage.scrollIntoView({block:'center',behavior:'auto'});}));
 colorButtons.forEach(button=>button.addEventListener('click',()=>setColor(button.dataset.color)));
 colorDemoButton.addEventListener('click',()=>playColorDemo());
 document.querySelector('#pose-time').addEventListener('input',event=>window.modelStudy?.seek(Number(event.target.value)/100));

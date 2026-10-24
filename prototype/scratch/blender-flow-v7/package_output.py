@@ -55,3 +55,20 @@ for row,clip in enumerate(['idle','greeting','focus','celebrate']):
         picture=Image.open(out/'frames'/clip/f'{index:02}.png').convert('RGB')
         keys.paste(picture,(col*320,row*354+34))
 keys.save(out/'motion-keys.jpg',quality=93)
+# Compose a synchronized motion comparison from the already rendered frames.
+# This is a lightweight image operation; it does not invoke Blender or a browser.
+if (previous/'frames/greeting/00.png').exists():
+    comparison_frames=[]
+    for index in range(16):
+        image=Image.new('RGB',(640,704),'#f3f0e8')
+        draw=ImageDraw.Draw(image)
+        draw.text((16,2),'v6',fill='#236e69',font=font)
+        draw.text((336,2),'v7',fill='#236e69',font=font)
+        for row,clip in enumerate(['greeting','celebrate']):
+            for col,folder in enumerate([previous,out]):
+                with Image.open(folder/'frames'/clip/f'{index:02}.png') as source:
+                    image.paste(source.convert('RGB').resize((320,320)),(col*320,32+row*352))
+            draw.text((16,32+row*352),clip.title(),fill='#236e69',font=font)
+        comparison_frames.append(image)
+    comparison_frames[0].save(out/'motion-comparison.gif',save_all=True,
+        append_images=comparison_frames[1:],duration=167,loop=0,optimize=False)

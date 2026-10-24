@@ -156,7 +156,7 @@ try {
   for(const name of ['Idle','Greeting','Focus','Celebrate']){
     await page.locator(`[data-clip="${name}"]`).click();
     await page.waitForTimeout(100);
-    await page.screenshot({path:`output/browser-eyes-${name.toLowerCase()}.png`,timeout:15000});
+    await page.locator('.stage').screenshot({path:`output/browser-eyes-${name.toLowerCase()}.png`,timeout:15000});
   }
   await page.locator('[data-view="hero"]').click();
   await page.locator('[data-clip="Focus"]').click();
