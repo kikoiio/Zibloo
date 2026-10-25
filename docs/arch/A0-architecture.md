@@ -155,7 +155,7 @@ export function evaluateUnlocks(progress: UnlockProgress, prev: UnlockState): Un
 ## 5. 可靠性链路(§4.1 三条验收的落点)
 
 1. **锁屏/后台不漂移(V1)**:`projectSession` 纯推导,JS 挂起多久都无关;运行中由 `TimerForegroundService` 保活音画,段边界提前注册 exact alarm 兜底。**前台服务只负责存活与到点广播,不 tick 计时**——不存在双真值源。
-2. **杀 App 提醒仍触发(V2)**:全部经 `AlarmManager`(与进程无关);到点由 `AlarmReceiver` 直接发通知 + 原生 MediaPlayer 播叫声 + 震动,WebView 无需存活。
+2. **杀 App 提醒仍触发(V2)**:全部经 `AlarmManager`(与进程无关);到点由 `AlarmReceiver` 直接发通知 + 原生 MediaPlayer 播叫声 + 震动,WebView 无需存活。**模拟器 CI 已验证(2026-10-25,`android-emulator` workflow)**:root SIGKILL 杀进程后闹钟准点触发并发出通知;重启后 BootReceiver 从镜像重建。调试期教训(已修):闹钟 PendingIntent 必须显式组件——action+package 的隐式 Intent 解析不到无 intent-filter 的 manifest receiver,广播会在入队瞬间被丢弃;receiver 注册在 targetSdk 34+ 必须带 `RECEIVER_NOT_EXPORTED`,否则插件加载直接失败。
 3. **重启不丢(V3)**:`BootReceiver`(BOOT_COMPLETED + MY_PACKAGE_REPLACED)从 `ReminderStore` 镜像重建全部闹钟;App 冷启动时 `syncAlarms(wholeSet)` 幂等重排是第二道保险。
 4. **权限降级可见**:`SCHEDULE_EXACT_ALARM` 被拒(Android 14+ 默认不授予)→ `syncAlarms` 返回 `degraded`,提醒列表顶部显示警告条 + 跳转系统设置;降级到 `setAndAllowWhileIdle`(不精确但仍触发)。
 
