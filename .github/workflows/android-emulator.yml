@@ -110,14 +110,16 @@ jobs:
         run: |
           REMINDER_LABEL='冒烟A' REMINDER_MINUTES=1 node scripts/device-smoke.mjs
           adb shell input keyevent KEYCODE_HOME
-          # am kill 只对已进 cached 态的进程生效,时序有抖动:重试直到确认死亡
-          dead=""
-          for i in $(seq 1 15); do
-            sleep 3
-            adb shell am kill io.zibloo.app > /dev/null 2>&1
-            if ! adb shell pidof io.zibloo.app | grep -q .; then dead=1; break; fi
-          done
-          if [ -z "$dead" ]; then
+          sleep 2
+          # am kill 会把包置为 stopped 态,广播被系统丢弃;PRD V2 是"进程被杀"而非"停止应用",
+          # 用 root SIGKILL 模拟系统回收/崩溃死亡(不进 stopped 态)
+          adb root > /dev/null
+          adb wait-for-device
+          sleep 2
+          pid=$(adb shell pidof io.zibloo.app | tr -d '\r\n ')
+          if [ -n "$pid" ]; then adb shell kill -9 "$pid"; fi
+          sleep 2
+          if adb shell pidof io.zibloo.app | grep -q .; then
             echo "进程未被杀掉"; adb shell dumpsys activity processes | grep -A2 zibloo | head -10; exit 1
           fi
           echo "进程已死,等待闹钟触发(最长 180s)…"
@@ -153,11 +155,10 @@ jobs:
           done
           REMINDER_LABEL='冒烟B' REMINDER_MINUTES=2 node scripts/device-smoke.mjs
           adb shell input keyevent KEYCODE_HOME
-          for i in $(seq 1 15); do
-            sleep 3
-            adb shell am kill io.zibloo.app > /dev/null 2>&1
-            if ! adb shell pidof io.zibloo.app | grep -q .; then break; fi
-          done
+          sleep 2
+          pid=$(adb shell pidof io.zibloo.app | tr -d '\r\n ')
+          if [ -n "$pid" ]; then adb shell kill -9 "$pid"; fi
+          sleep 2
           echo "重启设备,验证 BootReceiver 重建…"
           adb reboot
           adb wait-for-device
