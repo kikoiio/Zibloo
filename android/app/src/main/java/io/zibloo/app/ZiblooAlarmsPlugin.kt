@@ -44,7 +44,7 @@ class ZiblooAlarmsPlugin : Plugin() {
         )
     }
 
-    override fun handleUnload() {
+    override fun handleOnDestroy() {
         webViewAlive = false
         webVisible = false
         try {
