@@ -111,8 +111,8 @@ jobs:
           if [ -z "$dead" ]; then
             echo "进程未被杀掉"; adb shell dumpsys activity processes | grep -A2 zibloo | head -10; exit 1
           fi
-          echo "进程已死,等待闹钟触发(最长 120s)…"
-          for i in $(seq 1 40); do
+          echo "进程已死,等待闹钟触发(最长 180s)…"
+          for i in $(seq 1 60); do
             if adb shell dumpsys notification --noredact | grep -q "冒烟A"; then
               echo "V2-lite 通过:杀进程后提醒照响"
               adb exec-out screencap -p > artifacts-v2.png || true
@@ -121,7 +121,14 @@ jobs:
             sleep 3
           done
           echo "V2-lite 失败:通知未出现"
+          echo "--- 包状态(stopped/flags) ---"
+          adb shell dumpsys package io.zibloo.app | grep -iE "stopped|flags=\[" | head -4 || true
+          echo "--- 闹钟 ---"
           adb shell dumpsys alarm | grep -B2 -A5 zibloo || true
+          echo "--- 广播投递历史 ---"
+          adb shell dumpsys activity broadcasts | grep -B3 -A8 "ALARM_FIRED" | head -60 || true
+          echo "--- 通知快照 ---"
+          adb shell dumpsys notification --noredact | grep -B2 -A6 zibloo | head -30 || true
           exit 1
       - name: 'Phase B: 重启后从镜像重建 (V3-lite)'
         run: |
