@@ -101,11 +101,15 @@ jobs:
         run: |
           REMINDER_LABEL='冒烟A' REMINDER_MINUTES=1 node scripts/device-smoke.mjs
           adb shell input keyevent KEYCODE_HOME
-          sleep 2
-          adb shell am kill io.zibloo.app
-          sleep 2
-          if adb shell pidof io.zibloo.app | grep -q .; then
-            echo "进程未被杀掉"; exit 1
+          # am kill 只对已进 cached 态的进程生效,时序有抖动:重试直到确认死亡
+          dead=""
+          for i in $(seq 1 15); do
+            sleep 3
+            adb shell am kill io.zibloo.app > /dev/null 2>&1
+            if ! adb shell pidof io.zibloo.app | grep -q .; then dead=1; break; fi
+          done
+          if [ -z "$dead" ]; then
+            echo "进程未被杀掉"; adb shell dumpsys activity processes | grep -A2 zibloo | head -10; exit 1
           fi
           echo "进程已死,等待闹钟触发(最长 120s)…"
           for i in $(seq 1 40); do
@@ -128,8 +132,11 @@ jobs:
           adb forward tcp:9222 localabstract:"$socket"
           REMINDER_LABEL='冒烟B' REMINDER_MINUTES=2 node scripts/device-smoke.mjs
           adb shell input keyevent KEYCODE_HOME
-          sleep 2
-          adb shell am kill io.zibloo.app
+          for i in $(seq 1 15); do
+            sleep 3
+            adb shell am kill io.zibloo.app > /dev/null 2>&1
+            if ! adb shell pidof io.zibloo.app | grep -q .; then break; fi
+          done
           echo "重启设备,验证 BootReceiver 重建…"
           adb reboot
           adb wait-for-device
