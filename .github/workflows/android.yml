@@ -1,0 +1,48 @@
+name: Android APK
+on:
+  push:
+    branches: [codex/prototype-b2-c3]
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'static/**'
+      - 'package.json'
+      - 'capacitor.config.ts'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build web app
+        run: npm run build
+      - name: Sync web assets into Android project
+        run: npx cap sync android
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - name: Build debug APK (zibloo-alarms plugin compiled here)
+        run: |
+          chmod +x android/gradlew
+          android/gradlew -p android assembleDebug --no-daemon
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: zibloo-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

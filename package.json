@@ -9,13 +9,16 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"smoke": "node scripts/smoke.mjs"
 	},
 	"devDependencies": {
+		"@capacitor/cli": "^8.5.3",
 		"@sveltejs/adapter-static": "^4.0.0",
 		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@types/node": "^26.6.5",
+		"playwright": "^1.64.1",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"typescript": "^6.0.0",
@@ -23,6 +26,8 @@
 		"vitest": "^5.0.0"
 	},
 	"dependencies": {
+		"@capacitor/android": "^8.5.3",
+		"@capacitor/core": "^8.5.3",
 		"dexie": "^4.0.0",
 		"fast-check": "^4.0.0"
 	}

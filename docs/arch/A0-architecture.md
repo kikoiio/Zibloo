@@ -199,6 +199,6 @@ export function evaluateUnlocks(progress: UnlockProgress, prev: UnlockState): Un
 
 ### 历史与当前下一步
 
-2026-10-21 用户否决旧原型;2026-10-22 选定 B2/C3;2026-10-24 从 3D 帧序列转向 2D 原图动画,同日五姿态帧方案通过云端验证,用户确认后 **P0 原型退役删除**,验证记录保留在 `prototype/review/`,姿态帧、C3 字标与 E/G 声音迁移至应用静态资产。
+2026-10-21 用户否决旧原型;2026-10-22 选定 B2/C3;2026-10-24 从 3D 帧序列转向 2D 原图动画,同日五姿态帧方案通过云端验证,用户确认后 **P0 原型退役删除**,验证记录存档见 `docs/prototype-history.md`,姿态帧、C3 字标与 E/G 声音迁移至应用静态资产。
 
-**P1 已启动(2026-10-24)**:脚手架按 §3 模块地图落地于仓库根目录;首个实现目标即本节建议的 `core/timer` 纯函数(`startSession / projectSession / pause / resume / skip`)+ 属性测试(任意暂停/恢复序列零漂移、后台跨多段一次投影正确),随后 `core/reminders`、`core/zibloo` 映射与 UI 壳。
+**P1 已启动(2026-10-24)**:脚手架按 §3 模块地图落地于仓库根目录;`zibloo-alarms` Kotlin 插件(AlarmScheduler / BootReceiver / AlarmReceiver / TimerForegroundService / ReminderStore)已随 android/ 工程实现,APK 由 GitHub Actions 构建(`.github/workflows/android.yml`);Capacitor 实施采用 **8.x**(定稿时的 6 已落后两个大版本,插件 API 同构,compileSdk 36 满足以后上架条件);网页验收走 CI 冒烟(Playwright,`scripts/smoke.mjs`);首个实现目标即本节建议的 `core/timer` 纯函数(`startSession / projectSession / pause / resume / skip`)+ 属性测试(任意暂停/恢复序列零漂移、后台跨多段一次投影正确),随后 `core/reminders`、`core/zibloo` 映射与 UI 壳。

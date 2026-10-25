@@ -15,7 +15,7 @@ export interface AlarmPort {
 	/** 撤掉本端口的全部待触发(页面卸载/静音切换时用;原生端无需此操作) */
 	clear(): void;
 	onAlarmFired(cb: (e: { reminderId: string; firedAt: number }) => void): Unsubscribe;
-	getPermission(): 'granted' | 'denied' | 'unsupported';
+	getPermission(): Promise<'granted' | 'denied' | 'unsupported'>;
 	requestPermission(): Promise<'granted' | 'denied' | 'unsupported'>;
 }
 
@@ -24,4 +24,10 @@ export interface AudioPort {
 	stopAll(): void;
 	/** 首次用户手势时调用,解锁 WebAudio 自动播放限制 */
 	unlock(): void;
+}
+
+/** 计时前台服务(A0 §5.1):保活与常驻通知,不 tick 计时;Web 端为 no-op */
+export interface ForegroundPort {
+	showTimer(title: string, body: string): void;
+	hideTimer(): void;
 }

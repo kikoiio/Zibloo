@@ -9,7 +9,7 @@
 - 水中悬浮，腕足可以伸展、回卷、触碰与拿放物件，不固定手持秒表。
 - 减少玩偶感，避免生物写实的皮肤纹理、密集吸盘、尖细末端与真实动物眼睛；继续禁止紫色。
 
-用户选择截图：[B2](references/selected-B2.png)。完整原始概念板：[B2 舒展腕足](../../prototype/scratch/character-study-v3/B2-fluid-extended.png)。
+用户选择截图：[B2](references/selected-B2.png)。完整原始概念板：[B2 舒展腕足](references/B2-fluid-extended.png)。
 
 ## C3：角色与字标的品牌组合方向
 
@@ -18,7 +18,7 @@
 - 用户选择的是整张 C3 概念板；上下两种组合均保留为参考，主用组合及字形细节仍需整理。
 - 品牌需要为计时器之外的未来扩展留出空间；本次选择不增加首版功能范围。
 
-用户选择截图：[C3](references/selected-C3.png)。完整无裁切整理版：[C3 角色与字标](../../prototype/scratch/character-study-v4/C3-zibloo-wordmark.png)。
+用户选择截图：[C3](references/selected-C3.png)。完整无裁切整理版：[C3 角色与字标](references/C3-zibloo-wordmark.png)。
 
 ## 决定范围与下一步
 
@@ -44,7 +44,7 @@
 
 实现先默认 E，设置中可切换 G 或静音并保存在本机；已选择 G/静音的偏好继续保留。这是当前原型配置，不代表永久声音商标定稿。第二轮叫名方案已被用户否决，第三轮 D/F 保留为历史试听。
 
-音频与原始来源、哈希见[当前声音预设](../../prototype/scratch/p0-v2/assets/sounds/README.md)。声音选择不改变已选 B2 角色、C3 字标，也不要求额外展开腕足。
+音频与原始来源、哈希见[当前声音预设](../../static/sounds/manifest.json)。声音选择不改变已选 B2 角色、C3 字标，也不要求额外展开腕足。
 
 ## 当前动画方向（2026-10-24）
 

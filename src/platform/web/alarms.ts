@@ -34,7 +34,9 @@ export function createWebAlarmPort(): AlarmPort {
 			listeners.add(cb);
 			return () => listeners.delete(cb);
 		},
-		getPermission: () => 'unsupported',
+		async getPermission() {
+			return 'unsupported';
+		},
 		async requestPermission() {
 			return 'unsupported';
 		}

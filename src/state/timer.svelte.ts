@@ -5,6 +5,9 @@ import type { Session, SessionKind, TimerPlan, PhaseView } from '../core/timer/t
 import type { HistoryEntry } from '../core/history/history.ts';
 import { getDb } from '../persistence/db.ts';
 import { ports } from './ports.svelte.ts';
+import { t } from './i18n.svelte.ts';
+
+let lastFgSegment = -1;
 
 export const timer: {
 	session: Session | null;
@@ -45,7 +48,18 @@ function tick(): void {
 	// 自然完成检测:投影为 null 且非暂停 → 完成
 	if (s.endedAt === null && s.pausedAt === null && engine.projectSession(s, timer.now) === null) {
 		complete('completed');
+		return;
 	}
+	// 段边界变化 → 更新前台通知文案(原生;Web 为 no-op)
+	const v = engine.projectSession(s, timer.now);
+	if (v && v.segmentIndex !== lastFgSegment) {
+		lastFgSegment = v.segmentIndex;
+		ports.foregroundPort.showTimer(t('app.name'), t(notifKeyFor(s.kind)));
+	}
+}
+
+function notifKeyFor(kind: SessionKind): 'zibloo.notif.training.body' | 'zibloo.notif.focus.body' | 'zibloo.notif.quick.body' {
+	return kind === 'training' ? 'zibloo.notif.training.body' : kind === 'focus' ? 'zibloo.notif.focus.body' : 'zibloo.notif.quick.body';
 }
 
 export function currentView(): PhaseView | null {
@@ -76,6 +90,8 @@ function complete(recorded: 'completed' | 'ended-early' | 'skipped'): void {
 	recordHistory(recorded);
 	timer.celebrating = true;
 	timer.completedAt = Date.now();
+	lastFgSegment = -1;
+	ports.foregroundPort.hideTimer();
 	ports.audioPort.play('cheer3');
 	// 庆祝数秒后收尾,回到主页
 	setTimeout(() => {
@@ -99,6 +115,8 @@ export function startSession(kind: SessionKind, plan: TimerPlan): void {
 	timer.celebrating = false;
 	timer.completedAt = null;
 	timer.now = now;
+	lastFgSegment = -1;
+	ports.foregroundPort.showTimer(t('app.name'), t(notifKeyFor(kind)));
 	ensureTicker();
 }
 
