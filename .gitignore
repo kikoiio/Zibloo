@@ -6,3 +6,4 @@ dist/
 .tmp/
 artifacts/
 .DS_Store
+dist/

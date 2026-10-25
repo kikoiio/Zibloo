@@ -2,7 +2,50 @@
 	import { t } from '../../state/i18n.svelte.ts';
 	import { settings, setLocale, setVoice, setMuted } from '../../state/settings.svelte.ts';
 	import { ports } from '../../state/ports.svelte.ts';
-	import { exportAll } from '../../persistence/db.ts';
+	import { exportAll, restoreBackup } from '../../persistence/db.ts';
+	import { makeBackup, parseBackup } from '../../core/data/transfer.ts';
+	import { trainingPresets, replacePresets } from '../../state/presets.svelte.ts';
+	import { loadReminders, reminders } from '../../state/reminders.svelte.ts';
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		void loadReminders();
+	});
+
+	let importWarn = $state('');
+
+	async function exportData(): Promise<void> {
+		const { history, reminders: list } = await exportAll();
+		const file = makeBackup({ history, reminders: list, presets: trainingPresets.list });
+		const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `zibloo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
+	async function importData(event: Event): Promise<void> {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (!file) return;
+		const parsed = parseBackup(await file.text());
+		if (!parsed.ok) {
+			importWarn = t('settings.importInvalid');
+			return;
+		}
+		if (!confirm(t('settings.importConfirm'))) return;
+		const backup = parsed.backup;
+		await restoreBackup(backup.data);
+		replacePresets(backup.data.presets);
+		importWarn = '';
+		// 提醒规则已变:全量重排后整页刷新恢复各 store
+		await loadReminders();
+		reminders.list = backup.data.reminders;
+		location.reload();
+	}
 	import { type VoicePreset, type AudioCue } from '../../core/zibloo/cues.ts';
 	import type { MessageKey } from '../../i18n/messages.ts';
 
@@ -38,16 +81,6 @@
 		ports.audioPort.play(cue);
 	}
 
-	async function exportData(): Promise<void> {
-		const data = await exportAll();
-		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `zibloo-export-${new Date().toISOString().slice(0, 10)}.json`;
-		a.click();
-		URL.revokeObjectURL(url);
-	}
 </script>
 
 <main class="page">
@@ -84,8 +117,17 @@
 	</section>
 
 	<section class="card">
-		<h2>{t('settings.export')}</h2>
-		<button class="btn ghost" onclick={exportData}>{t('settings.export')}</button>
+		<h2>{t('settings.data')}</h2>
+		<div class="chips">
+			<button class="btn ghost" onclick={exportData}>{t('settings.export')}</button>
+			<label class="btn ghost file">
+				{t('settings.import')}
+				<input type="file" accept="application/json,.json" hidden onchange={importData} />
+			</label>
+		</div>
+		{#if importWarn}
+			<p class="warn">{importWarn}</p>
+		{/if}
 	</section>
 
 	<section class="card">
@@ -153,5 +195,15 @@
 
 	.about.note {
 		font-size: 0.82rem;
+	}
+
+	.file {
+		cursor: pointer;
+	}
+
+	.warn {
+		margin: 0.7rem 0 0;
+		font-size: 0.82rem;
+		color: var(--c-danger);
 	}
 </style>

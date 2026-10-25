@@ -7,7 +7,7 @@ import { mkdirSync } from 'node:fs';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const PORT = 4173;
-const BASE = `http://127.0.0.1:${PORT}`;
+let BASE = `http://127.0.0.1:${PORT}`;
 const ART = 'artifacts';
 
 let failures = 0;
@@ -20,11 +20,45 @@ function check(name, ok, detail = '') {
 	}
 }
 
-const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--host', '127.0.0.1', '--strictPort'], {
-	stdio: 'pipe',
-	cwd: process.cwd(),
-	detached: true
-});
+let server = null;
+
+function startServer(port) {
+	return new Promise((resolve, reject) => {
+		const child = spawn(
+			'npx',
+			['vite', 'preview', '--port', String(port), '--host', '127.0.0.1', '--strictPort'],
+			{ stdio: 'pipe', cwd: process.cwd(), detached: true }
+		);
+		const fail = (err) => {
+			try {
+				process.kill(-child.pid, 'SIGTERM');
+			} catch {}
+			clearTimeout(timer);
+			reject(err);
+		};
+		const onError = (err) => fail(err);
+		const onExit = () => fail(new Error('vite preview 启动即退出(端口被占?)'));
+		child.on('error', onError);
+		child.on('exit', onExit);
+		// 3 秒内既没 error 也没 exit 视为绑定成功
+		const timer = setTimeout(() => {
+			child.off('error', onError);
+			child.off('exit', onExit);
+			resolve(child);
+		}, 3000);
+	});
+}
+
+for (let attempt = 0; attempt < 6 && !server; attempt++) {
+	try {
+		server = await startServer(PORT + attempt);
+		BASE = `http://127.0.0.1:${PORT + attempt}`;
+		if (attempt > 0) console.log(`(端口 ${PORT + attempt - 1} 被占,改用 ${PORT + attempt})`);
+	} catch {
+		// 换下一个端口重试
+	}
+}
+if (!server) throw new Error('无法启动预览服务器:4173-4178 全部被占');
 
 // 硬超时:任何步骤卡死都快速失败,避免 CI 挂 10 分钟
 const HARD_TIMEOUT = setTimeout(() => {
@@ -59,9 +93,10 @@ try {
 	const errors = [];
 	page.on('pageerror', (e) => errors.push(String(e)));
 
-	await page.goto(BASE, { waitUntil: 'networkidle' });
+	await page.goto(BASE, { waitUntil: 'load' });
+	await page.waitForSelector('img.lockup', { timeout: 10_000 });
 
-	// 主页:字标、问候、三模式入口
+	// 主页:字标、问候、三模式入口(ssr=false 纯客户端挂载,必须等元素而非数网络)
 	check('主页加载', (await page.locator('img.lockup').count()) === 1);
 	for (const name of ['训练', '专注', '记事']) {
 		check(`入口可见:${name}`, await page.locator('.entry', { hasText: name }).first().isVisible());
@@ -106,10 +141,27 @@ try {
 	await page.waitForURL(BASE + '/', { timeout: 8000 });
 	check('结束回主页', true);
 
-	// 训练:自定义 5s/5s×2 组,验证跳段进入休息
+	// 训练:自定义 5s/5s×2 组,验证跳段进入休息;顺带验证预设保存/加载
 	await page.locator('.entry', { hasText: '训练' }).click();
 	await page.waitForSelector('.steppers');
 	const nums = page.locator('.steppers input[type="number"]');
+	await nums.nth(0).fill('0');
+	await nums.nth(1).fill('5');
+	await nums.nth(2).fill('5');
+	await nums.nth(3).fill('2');
+	await page.fill('.save-row input', '冒烟预设');
+	await page.locator('.save-row .btn').click();
+	await page.waitForSelector('.preset .load:has-text("冒烟预设")');
+	check('预设保存成功', true);
+	await nums.nth(1).fill('9');
+	await page.locator('.preset .load', { hasText: '冒烟预设' }).click();
+	check(
+		'预设加载恢复参数',
+		(await nums.nth(1).inputValue()) === '5'
+	);
+	await page.locator('.preset .drop').first().click();
+	await page.waitForSelector('.preset', { state: 'detached' });
+	check('预设删除成功', true);
 	await nums.nth(0).fill('0');
 	await nums.nth(1).fill('5');
 	await nums.nth(2).fill('5');
@@ -140,9 +192,11 @@ try {
 	check('提醒删除成功', true);
 
 	// 英文界面
-	await page.goto(`${BASE}/settings`, { waitUntil: 'networkidle' });
+	await page.goto(`${BASE}/settings`, { waitUntil: 'load' });
+	await page.waitForSelector('.chip', { timeout: 10_000 });
 	await page.locator('.chip', { hasText: 'English' }).click();
-	await page.goto(BASE, { waitUntil: 'networkidle' });
+	await page.goto(BASE, { waitUntil: 'load' });
+	await page.waitForSelector('.entry', { timeout: 10_000 });
 	check('英文界面切换', await page.locator('.entry', { hasText: 'Training' }).first().isVisible());
 	await page.screenshot({ path: `${ART}/smoke-home-en.png` });
 

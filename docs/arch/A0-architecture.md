@@ -202,3 +202,41 @@ export function evaluateUnlocks(progress: UnlockProgress, prev: UnlockState): Un
 2026-10-21 用户否决旧原型;2026-10-22 选定 B2/C3;2026-10-24 从 3D 帧序列转向 2D 原图动画,同日五姿态帧方案通过云端验证,用户确认后 **P0 原型退役删除**,验证记录存档见 `docs/prototype-history.md`,姿态帧、C3 字标与 E/G 声音迁移至应用静态资产。
 
 **P1 已启动(2026-10-24)**:脚手架按 §3 模块地图落地于仓库根目录;`zibloo-alarms` Kotlin 插件(AlarmScheduler / BootReceiver / AlarmReceiver / TimerForegroundService / ReminderStore)已随 android/ 工程实现,APK 由 GitHub Actions 构建(`.github/workflows/android.yml`);Capacitor 实施采用 **8.x**(定稿时的 6 已落后两个大版本,插件 API 同构,compileSdk 36 满足以后上架条件);网页验收走 CI 冒烟(Playwright,`scripts/smoke.mjs`);首个实现目标即本节建议的 `core/timer` 纯函数(`startSession / projectSession / pause / resume / skip`)+ 属性测试(任意暂停/恢复序列零漂移、后台跨多段一次投影正确),随后 `core/reminders`、`core/zibloo` 映射与 UI 壳。
+
+## 9. 演进与可变性指南(2026-10-25)
+
+需求会变,架构的回答不是「预测变化」,而是「让变化的落点确定」。本节记录:哪一层必须稳定、变化往哪里放、以及新功能的标准形状。
+
+### 9.1 稳定核与可变壳
+
+不变式(§2)是**稳定核**——时间戳推导、规则表唯一事实源、呈现无状态、原生只收绝对时刻。这些不是实现细节而是产品正确性的来源,变更它们等于变更验收标准 V1–V3,须走 PRD/A0 评审,不走随手改。
+
+可变性集中在三处,全部由 TypeScript 判别联合 + 穷尽检查承载:**新增变体时编译器会指出每一个必须改的落点,漏改 = 编译失败**:
+
+| 预期变化 | 扩展点 | 编译器会带你去改的地方 |
+|---|---|---|
+| 新计时模式(如自定义序列、正计时) | `TimerPlan` 联合 | `expandSegments` 穷尽分支、`mapZibloo` 姿态映射、i18n key、routes 页 |
+| 新提醒规则(如每月、农历) | `ReminderRule` 联合 | `nextTrigger`、`planAlarms` 校验、提醒页表单 |
+| 新平台(iOS / 桌面) | `platform/ports` 接口 | 各端口的原生实现;`core` 与 UI 零改动 |
+| 新角色表现(P2 装饰、新姿态) | `ZiblooPresentation` | `ZiblooPresenter` 渲染;映射表唯一实现处 |
+| 数据结构演进 | Dexie version 迁移 | `persistence/db.ts`(主键不可原地改,删表重建,见 v2/v3 先例) |
+
+### 9.2 新功能的标准形状
+
+多数产品需求可以落成同一个可复制的形状——**「数据模型 + 纯规划函数 + 投影」**:
+
+1. 在 `core` 定义不可变的数据类型(联合优先);
+2. 写一个纯函数从数据推导出「期望的世界状态」;
+3. 让平台/存储/渲染层作为投影去追这个状态,不一致时以数据为准重建。
+
+提醒系统是这个形状的范本(规则表 → `planAlarms` → `syncAlarms` 全量幂等同步);备份导入导出(`core/data/transfer` 信封)与自定义预设(`core/timer/presets`)同形。**为新功能找落点时先想这个形状,而不是先想 UI。**
+
+### 9.3 明确不做的事
+
+- **不做投机性抽象**:不为「未来可能的模式」预建插件系统、注册机制或配置化规则引擎。经验法则:同类变化出现第三次之前,用联合类型 + switch 就够;第三次出现且形状仍不稳定时再考虑表驱动。
+- **不破坏依赖边界**:任何需求都不允许 `core` 反向依赖 svelte/dexie/capacitor(`src/core/arch.test.ts` 强制)。UI 快速堆料可以,堆完按 §3 分层归位。
+- **导入/导出格式从第一天版本化**:信封带 `kind` + `version`,解析在 core 纯函数完成,旧版本明确拒绝而非猜字段;新增字段永远是加可选字段 + bump version。
+
+### 9.4 数据与迁移的先例
+
+v1→v3 的 Dexie 主键迁移确立了先例:主键不可原地改,走「删表重建」;应用侧 UUID 外置主键是默认选择;破坏性导入必须在 UI 显式确认。后续 schema 变更照此办理。
