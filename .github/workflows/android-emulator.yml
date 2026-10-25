@@ -17,6 +17,8 @@ jobs:
   emulator-reliability:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      ANDROID_AVD_HOME: /home/runner/.android/avd
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -32,18 +34,24 @@ jobs:
         run: |
           npm run build
           npx cap sync android
-      - name: Install emulator system image
+      - name: Install Android SDK tools
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "system-images;android-35;google_apis;x86_64" "emulator" > /dev/null
+            "system-images;android-35;google_apis;x86_64" \
+            "emulator" "platform-tools" > /dev/null
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
       - name: Boot headless emulator
         run: |
           test -e /dev/kvm && echo "KVM ok"
+          mkdir -p "$ANDROID_AVD_HOME"
           echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
             -n test -k "system-images;android-35;google_apis;x86_64" -d pixel_6
-          "$ANDROID_HOME/emulator/emulator" -avd test -no-window -no-audio \
-            -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 3072 &
+          test -f "$ANDROID_AVD_HOME/test.ini" || { echo "AVD 创建失败"; ls -la "$ANDROID_AVD_HOME"; exit 1; }
+          nohup emulator -avd test -no-window -no-audio \
+            -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 3072 \
+            > /tmp/emulator.log 2>&1 &
           adb wait-for-device
           boot=""
           for i in $(seq 1 120); do
@@ -51,7 +59,7 @@ jobs:
             [ "$boot" = "1" ] && break
             sleep 5
           done
-          [ "$boot" = "1" ] || { echo "模拟器未完成启动"; exit 1; }
+          if [ "$boot" != "1" ]; then echo "模拟器未完成启动"; tail -30 /tmp/emulator.log; exit 1; fi
           echo "模拟器启动完成"
       - name: Build, install APK, grant permissions
         run: |
@@ -60,7 +68,7 @@ jobs:
           adb install -r android/app/build/outputs/apk/debug/app-debug.apk
           adb shell pm grant io.zibloo.app android.permission.POST_NOTIFICATIONS || true
           adb shell appops set io.zibloo.app SCHEDULE_EXACT_ALARM allow || true
-      - name: Forward WebView debug port
+      - name: Launch app and forward WebView debug port
         run: |
           adb shell am start -n io.zibloo.app/.MainActivity
           sleep 8
@@ -87,7 +95,7 @@ jobs:
             sleep 3
           done
           echo "V2-lite 失败:通知未出现"
-          adb shell dumpsys alarm | grep -A3 zibloo || true
+          adb shell dumpsys alarm | grep -B2 -A5 zibloo || true
           exit 1
       - name: 'Phase B: 重启后从镜像重建 (V3-lite)'
         run: |
@@ -109,7 +117,7 @@ jobs:
             [ "$boot" = "1" ] && break
             sleep 5
           done
-          [ "$boot" = "1" ] || { echo "重启后未完成启动"; exit 1; }
+          if [ "$boot" != "1" ]; then echo "重启后未完成启动"; exit 1; fi
           echo "重启完成,等待重建的闹钟触发(最长 180s)…"
           for i in $(seq 1 60); do
             if adb shell dumpsys notification --noredact | grep -q "冒烟B"; then
@@ -120,7 +128,7 @@ jobs:
             sleep 3
           done
           echo "V3-lite 失败"
-          adb shell dumpsys alarm | grep -A3 zibloo || true
+          adb shell dumpsys alarm | grep -B2 -A5 zibloo || true
           exit 1
       - name: Save evidence
         if: always()
@@ -130,9 +138,12 @@ jobs:
           path: |
             artifacts-*.png
           retention-days: 7
+          if-no-files-found: ignore
       - name: Dump logcat on failure
         if: failure()
-        run: adb logcat -d > logcat.txt
+        run: |
+          adb wait-for-device || true
+          adb logcat -d > logcat.txt || true
       - name: Save logcat
         if: failure()
         uses: actions/upload-artifact@v7
@@ -140,3 +151,4 @@ jobs:
           name: emulator-logcat
           path: logcat.txt
           retention-days: 7
+          if-no-files-found: ignore
