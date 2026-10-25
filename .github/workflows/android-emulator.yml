@@ -45,6 +45,7 @@ jobs:
       - name: Boot headless emulator
         run: |
           test -e /dev/kvm && echo "KVM ok"
+          sudo chmod 666 /dev/kvm 2>/dev/null || true
           mkdir -p "$ANDROID_AVD_HOME"
           echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
             -n test -k "system-images;android-35;google_apis;x86_64" -d pixel_6
@@ -52,7 +53,19 @@ jobs:
           nohup emulator -avd test -no-window -no-audio \
             -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 3072 \
             > /tmp/emulator.log 2>&1 &
-          adb wait-for-device
+          # 快速失败:最多 3 分钟内模拟器必须出现在 adb 设备列表,否则带证据退出
+          seen=""
+          for i in $(seq 1 36); do
+            if adb devices | grep -q "emulator-"; then seen=1; break; fi
+            sleep 5
+          done
+          if [ -z "$seen" ]; then
+            echo "模拟器进程未注册到 adb,启动即失败"
+            ps aux | grep -v grep | grep emulator || echo "(无 emulator 进程)"
+            cat /tmp/emulator.log
+            exit 1
+          fi
+          timeout 60 adb wait-for-device
           boot=""
           for i in $(seq 1 120); do
             boot=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
@@ -137,6 +150,14 @@ jobs:
           name: emulator-evidence
           path: |
             artifacts-*.png
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Save emulator log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-boot-log
+          path: /tmp/emulator.log
           retention-days: 7
           if-no-files-found: ignore
       - name: Dump logcat on failure
