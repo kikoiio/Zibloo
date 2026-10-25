@@ -38,9 +38,13 @@ class ZiblooAlarmsPlugin : Plugin() {
     override fun load() {
         webViewAlive = true
         webVisible = true
-        bridge.context.registerReceiver(
+        // targetSdk 34+ 注册非系统广播必须带 RECEIVER_NOT_EXPORTED,否则 SecurityException
+        // 会让整个插件加载失败(Capacitor 吞成 "plugin is not implemented")
+        ContextCompat.registerReceiver(
+            bridge.context,
             firedReceiver,
-            IntentFilter("io.zibloo.app.ALARM_FIRED")
+            IntentFilter("io.zibloo.app.ALARM_FIRED"),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
     }
 
