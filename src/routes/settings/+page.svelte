@@ -2,9 +2,9 @@
 	import { t } from '../../state/i18n.svelte.ts';
 	import { settings, setLocale, setVoice, setMuted } from '../../state/settings.svelte.ts';
 	import { ports } from '../../state/ports.svelte.ts';
-	import { exportAll, restoreBackup } from '../../persistence/db.ts';
 	import { makeBackup, parseBackup } from '../../core/data/transfer.ts';
 	import { trainingPresets, replacePresets } from '../../state/presets.svelte.ts';
+	import { exportBackupData, restoreFromBackup } from '../../state/history.svelte.ts';
 	import { loadReminders, reminders } from '../../state/reminders.svelte.ts';
 	import { onMount } from 'svelte';
 
@@ -15,8 +15,7 @@
 	let importWarn = $state('');
 
 	async function exportData(): Promise<void> {
-		const { history, reminders: list } = await exportAll();
-		const file = makeBackup({ history, reminders: list, presets: trainingPresets.list });
+		const file = makeBackup(await exportBackupData());
 		const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -38,7 +37,7 @@
 		}
 		if (!confirm(t('settings.importConfirm'))) return;
 		const backup = parsed.backup;
-		await restoreBackup(backup.data);
+		await restoreFromBackup(backup.data);
 		replacePresets(backup.data.presets);
 		importWarn = '';
 		// 提醒规则已变:全量重排后整页刷新恢复各 store
@@ -46,7 +45,7 @@
 		reminders.list = backup.data.reminders;
 		location.reload();
 	}
-	import { type VoicePreset, type AudioCue } from '../../core/zibloo/cues.ts';
+	import { type VoicePreset, type Cue } from '../../core/zibloo/cues.ts';
 	import type { MessageKey } from '../../i18n/messages.ts';
 
 	const VOICES: { value: VoicePreset | 'muted'; key: MessageKey }[] = [
@@ -56,12 +55,12 @@
 	];
 
 	/** 试听:语义标签 → 叫声 ID(与计时器同一映射表) */
-	const AUDITIONS: { cue: AudioCue; key: MessageKey }[] = [
-		{ cue: 'call', key: 'settings.cue.greet' },
-		{ cue: 'rise2', key: 'settings.cue.work' },
-		{ cue: 'fall2', key: 'settings.cue.rest' },
-		{ cue: 'cheer3', key: 'settings.cue.complete' },
-		{ cue: 'chime', key: 'settings.cue.reminder' }
+	const AUDITIONS: { cue: Cue; key: MessageKey }[] = [
+		{ cue: 'greet', key: 'settings.cue.greet' },
+		{ cue: 'work', key: 'settings.cue.work' },
+		{ cue: 'rest', key: 'settings.cue.rest' },
+		{ cue: 'complete', key: 'settings.cue.complete' },
+		{ cue: 'reminder', key: 'settings.cue.reminder' }
 	];
 
 	function pickVoice(value: VoicePreset | 'muted'): void {
@@ -76,7 +75,7 @@
 		return settings.muted ? 'muted' : settings.voice;
 	}
 
-	function audition(cue: AudioCue): void {
+	function audition(cue: Cue): void {
 		ports.audioPort.stopAll();
 		ports.audioPort.play(cue);
 	}

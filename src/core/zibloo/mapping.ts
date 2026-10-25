@@ -1,7 +1,7 @@
 // core/zibloo/mapping.ts — appState → ZiblooPresentation 的唯一实现(PRD §2.2 状态表)。
 // 无持久数值,每次现算;前台动画与后台通知共用同一份语义(A0 §2.3)。
 import type { PhaseView, SessionKind } from '../timer/types.ts';
-import type { CueEvent } from './cues.ts';
+import type { Cue } from './cues.ts';
 
 export type ActivityKind = 'none' | SessionKind;
 
@@ -38,7 +38,7 @@ export type ZiblooPresentation = {
 	motion: MotionPreset;
 	/** P2 装饰叠加,非替换;P1 恒空 */
 	overlay: string[];
-	cue: CueEvent | null;
+	cue: Cue | null;
 	particles: 'bubbles' | 'none';
 	/** 后台/锁屏降级通知文案键,与前台同表派生 */
 	notification: { titleKey: string; bodyKey: string } | null;
@@ -80,17 +80,17 @@ export function mapZibloo(input: MapZiblooInput): ZiblooPresentation {
 		}
 		if (input.activity === 'training' || input.activity === 'quick') {
 			if (phase === 'work') {
-				return { ...base, pose: 'train-exert', expression: 'wide', cue: 'work-start', particles: 'bubbles', notification: notifFor(input.activity) };
+				return { ...base, pose: 'train-exert', expression: 'wide', cue: 'work', particles: 'bubbles', notification: notifFor(input.activity) };
 			}
 			// prepare / rest 都按放松陪伴
-			return { ...base, pose: 'train-rest', expression: 'blink', cue: phase === 'rest' || phase === 'long-rest' ? 'rest-start' : null, particles: 'none', notification: notifFor(input.activity) };
+			return { ...base, pose: 'train-rest', expression: 'blink', cue: phase === 'rest' || phase === 'long-rest' ? 'rest' : null, particles: 'none', notification: notifFor(input.activity) };
 		}
 		// focus
 		if (phase === 'work') {
 			return { ...base, pose: 'focus-quiet', expression: 'focused', cue: null, particles: 'none', notification: notifFor('focus') };
 		}
 		// 休息:苏醒伸展
-		return { ...base, pose: 'focus-stir', expression: 'blink', cue: 'rest-start', particles: 'none', notification: notifFor('focus') };
+		return { ...base, pose: 'focus-stir', expression: 'blink', cue: 'rest', particles: 'none', notification: notifFor('focus') };
 	}
 
 	return { ...base, pose: 'idle-float', expression: 'blink', cue: null, particles: input.reducedMotion ? 'none' : 'bubbles', notification: null };

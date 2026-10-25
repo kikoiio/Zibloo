@@ -35,9 +35,9 @@ describe('mapZibloo:PRD §2.2 状态表', () => {
 
 	it('训练 work:加油姿态 + 上扬两声;rest:放松 + 下沉两声;prepare 无段切换声', () => {
 		const work = mapZibloo({ ...idle, activity: 'training', view: view('work') });
-		expect(work).toMatchObject({ pose: 'train-exert', expression: 'wide', cue: 'work-start' });
+		expect(work).toMatchObject({ pose: 'train-exert', expression: 'wide', cue: 'work' });
 		const rest = mapZibloo({ ...idle, activity: 'training', view: view('rest') });
-		expect(rest).toMatchObject({ pose: 'train-rest', cue: 'rest-start', particles: 'none' });
+		expect(rest).toMatchObject({ pose: 'train-rest', cue: 'rest', particles: 'none' });
 		const prep = mapZibloo({ ...idle, activity: 'training', view: view('prepare') });
 		expect(prep).toMatchObject({ pose: 'train-rest', cue: null });
 	});
@@ -46,7 +46,7 @@ describe('mapZibloo:PRD §2.2 状态表', () => {
 		const work = mapZibloo({ ...idle, activity: 'focus', view: view('work') });
 		expect(work).toMatchObject({ pose: 'focus-quiet', expression: 'focused', cue: null, particles: 'none' });
 		const rest = mapZibloo({ ...idle, activity: 'focus', view: view('long-rest') });
-		expect(rest).toMatchObject({ pose: 'focus-stir', cue: 'rest-start' });
+		expect(rest).toMatchObject({ pose: 'focus-stir', cue: 'rest' });
 	});
 
 	it('暂停:静止陪伴,不发段切换声', () => {

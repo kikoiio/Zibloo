@@ -5,10 +5,12 @@
 		loadReminders,
 		addReminder,
 		toggleReminder,
-		deleteReminder
+		deleteReminder,
+		refreshPermission
 	} from '../../state/reminders.svelte.ts';
 	import type { ReminderRule, Weekday } from '../../core/reminders/rule.ts';
 	import type { MessageKey } from '../../i18n/messages.ts';
+	import { settings } from '../../state/settings.svelte.ts';
 	import { onMount } from 'svelte';
 
 	onMount(() => {
@@ -71,6 +73,15 @@
 	}
 
 	const unschedulableIds = $derived(new Set(reminders.unschedulable.map((u) => u.id)));
+
+	function nextFireText(id: string): string {
+		const at = reminders.nextFires.get(id);
+		if (!at) return '';
+		const d = new Date(at);
+		const sameDay = new Date().toDateString() === d.toDateString();
+		const time = d.toLocaleTimeString(settings.locale === 'en' ? 'en-US' : 'zh-CN', { hour: '2-digit', minute: '2-digit' });
+		return sameDay ? time : d.toLocaleDateString(settings.locale === 'en' ? 'en-US' : 'zh-CN', { month: 'numeric', day: 'numeric' }) + ' ' + time;
+	}
 </script>
 
 <main class="page">
@@ -79,7 +90,12 @@
 		<h1>{t('reminders.title')}</h1>
 	</div>
 
-	{#if reminders.degraded}
+	{#if reminders.exactState === 'denied'}
+		<div class="degraded-card">
+			<p class="degraded">⚠ {t('reminders.exactDenied')}</p>
+			<button class="btn ghost small" onclick={() => refreshPermission()}>{t('reminders.grantExact')}</button>
+		</div>
+	{:else if reminders.degraded}
 		<p class="degraded">⚠ {t('settings.webReliability')}</p>
 	{/if}
 
@@ -98,6 +114,8 @@
 							{ruleText(r.rule)}
 							{#if unschedulableIds.has(r.id)}
 								<em class="warn">{t('reminders.unschedulableOnce')}</em>
+							{:else if r.enabled && nextFireText(r.id)}
+								<em class="next">{t('reminders.next', { time: nextFireText(r.id) })}</em>
 							{/if}
 						</span>
 					</div>
@@ -179,6 +197,24 @@
 		margin: 0;
 		font-size: 0.85rem;
 		color: var(--c-danger);
+	}
+
+	.degraded-card {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.degraded-card .small {
+		padding: 0.35rem 0.8rem;
+		font-size: 0.82rem;
+	}
+
+	.next {
+		color: var(--c-sub);
+		font-style: normal;
+		margin-left: 0.4rem;
 	}
 
 	.list {

@@ -39,7 +39,11 @@ export function createWebAlarmPort(): AlarmPort {
 		},
 		async requestPermission() {
 			return 'unsupported';
-		}
+		},
+		async syncTimerAlarms() {
+			// Web 端无原生兜底;页面存活期内由 ticker 驱动(网页版不承诺 §4.1)
+		},
+		setWebVisible() {}
 	};
 }
 

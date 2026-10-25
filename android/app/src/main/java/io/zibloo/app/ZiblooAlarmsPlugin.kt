@@ -19,8 +19,9 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 
 /**
- * zibloo-alarms 插件(A0 §1):全量幂等闹钟同步、精确闹钟权限、
- * 前台计时通知、到点事件上报。对应 PRD §4.1 的安卓可靠性路径。
+ * zibloo-alarms 插件(A0 §1):双域(提醒/计时段边界)幂等闹钟同步、
+ * 精确闹钟权限引导、前台计时通知、到点事件上报。
+ * 对应 PRD §4.1 的安卓可靠性路径。
  */
 @CapacitorPlugin(name = "ZiblooAlarms")
 class ZiblooAlarmsPlugin : Plugin() {
@@ -35,15 +36,41 @@ class ZiblooAlarmsPlugin : Plugin() {
     }
 
     override fun load() {
+        webViewAlive = true
+        webVisible = true
         bridge.context.registerReceiver(
             firedReceiver,
             IntentFilter("io.zibloo.app.ALARM_FIRED")
         )
     }
 
-    /** 全量替换式幂等同步:结构上无法表达「漏取消」(A0 §0) */
+    override fun handleUnload() {
+        webViewAlive = false
+        webVisible = false
+        try {
+            bridge.context.unregisterReceiver(firedReceiver)
+        } catch (e: IllegalArgumentException) {
+            // 未注册时忽略
+        }
+    }
+
+    /** 提醒域:全量替换式幂等同步,结构上无法表达「漏取消」(A0 §0) */
     @PluginMethod
     fun syncAlarms(call: PluginCall) {
+        val exact = syncDomain(call, ReminderStore.KEY_REMINDERS, AlarmDomain.REMINDER)
+        val result = JSObject()
+        result.put("degraded", !exact)
+        call.resolve(result)
+    }
+
+    /** 计时段边界兜底域:独立全量同步,不影响提醒域 */
+    @PluginMethod
+    fun syncTimerAlarms(call: PluginCall) {
+        syncDomain(call, ReminderStore.KEY_TIMER, AlarmDomain.TIMER)
+        call.resolve()
+    }
+
+    private fun syncDomain(call: PluginCall, storeKey: String, domain: String): Boolean {
         val array: JSArray = call.getArray("alarms") ?: JSArray()
         val raw = ArrayList<Map<String, Any?>>()
         for (i in 0 until array.length()) {
@@ -57,11 +84,15 @@ class ZiblooAlarmsPlugin : Plugin() {
             raw.add(map)
         }
         val items = AlarmScheduler.parse(raw)
-        ReminderStore.save(bridge.context, items)
-        val exact = AlarmScheduler.reschedule(bridge.context, items)
-        val result = JSObject()
-        result.put("degraded", !exact)
-        call.resolve(result)
+        ReminderStore.save(bridge.context, storeKey, items)
+        return AlarmScheduler.reschedule(bridge.context, storeKey, domain, items)
+    }
+
+    /** 页面可见性上报:计时段边界闹钟到点时据此决定是否由原生发声 */
+    @PluginMethod
+    fun setWebVisible(call: PluginCall) {
+        webVisible = call.getBoolean("visible") ?: false
+        call.resolve()
     }
 
     @PluginMethod
@@ -124,4 +155,10 @@ class ZiblooAlarmsPlugin : Plugin() {
         } else true
 
     private fun exactState(): String = if (exactAllowed()) "granted" else "denied"
+
+    companion object {
+        /** WebView 存活/页面可见性:静态标记,AlarmReceiver 在 App 进程内即可读取 */
+        @Volatile var webViewAlive: Boolean = false
+        @Volatile var webVisible: Boolean = false
+    }
 }

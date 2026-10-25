@@ -152,7 +152,7 @@ export function endSession(s: Session, now: number): Session {
 }
 
 /** 尚未消费的活跃时长。now 缺省时:已结束取 endedAt,暂停取锚点,运行中取当下。 */
-export function remainingMs(s: Session, now: number = Number.POSITIVE_INFINITY): number {
+function remainingMs(s: Session, now: number = Number.POSITIVE_INFINITY): number {
 	const effectiveNow = s.endedAt ?? s.pausedAt ?? now;
 	const last = s.segments.at(-1)!;
 	if (effectiveNow >= last.endAt) return 0;

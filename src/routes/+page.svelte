@@ -2,11 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { t } from '../state/i18n.svelte.ts';
 	import type { MessageKey } from '../i18n/messages.ts';
-	import { settings } from '../state/settings.svelte.ts';
-	import { timer, startSession, greet } from '../state/timer.svelte.ts';
-	import * as engine from '../core/timer/engine.ts';
-	import { mapZibloo } from '../core/zibloo/mapping.ts';
-	import type { PhaseView } from '../core/timer/types.ts';
+	import { timer, startSession, greet, currentPresentation } from '../state/timer.svelte.ts';
 	import ZiblooPresenter from '../zibloo/ZiblooPresenter.svelte';
 
 	const hour = new Date().getHours();
@@ -19,25 +15,7 @@
 		goto('/run');
 	}
 
-	// 主页投影:与引擎同一推导,不复制逻辑
-	function projectSafe(): PhaseView | null {
-		const s = timer.session;
-		if (!s || s.endedAt !== null) return null;
-		const eff = s.pausedAt ?? (timer.now || Date.now());
-		return engine.projectSession(s, eff);
-	}
-
-	const presentation = $derived(
-		mapZibloo({
-			activity: timer.session?.kind ?? 'none',
-			view: timer.session ? projectSafe() : null,
-			paused: timer.session !== null && timer.session.pausedAt !== null,
-			celebrating: timer.celebrating,
-			reminding: timer.reminding,
-			greeted: timer.greeted,
-			reducedMotion: settings.reducedMotion
-		})
-	);
+	const presentation = $derived(currentPresentation());
 </script>
 
 <main class="home">

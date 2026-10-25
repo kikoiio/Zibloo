@@ -1,16 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { t } from '../../state/i18n.svelte.ts';
-	import { getDb } from '../../persistence/db.ts';
-	import { summarizeDay, type HistoryEntry } from '../../core/history/history.ts';
-	import { settings } from '../../state/settings.svelte.ts';
+	import { history as historyState, loadHistory, locale } from '../../state/history.svelte.ts';
 
-	let entries: HistoryEntry[] = $state([]);
-	let summary = $state({ focusMs: 0, trainingMs: 0, quickMs: 0, sessions: 0 });
+	const entries = $derived(historyState.entries);
+	const summary = $derived(historyState.summary);
 
-	onMount(async () => {
-		entries = (await getDb().history.orderBy('startedAt').reverse().limit(100).toArray()).reverse();
-		summary = summarizeDay(entries, Date.now(), Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+	onMount(() => {
+		void loadHistory();
 	});
 
 	function fmt(ms: number): string {
@@ -20,7 +17,7 @@
 	}
 
 	function fmtTime(epoch: number): string {
-		return new Date(epoch).toLocaleString(settings.locale === 'en' ? 'en-US' : 'zh-CN', {
+		return new Date(epoch).toLocaleString(locale(), {
 			month: 'numeric',
 			day: 'numeric',
 			hour: '2-digit',

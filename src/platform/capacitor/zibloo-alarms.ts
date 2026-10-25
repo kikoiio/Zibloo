@@ -10,8 +10,11 @@ export type NativeAlarm = {
 };
 
 export interface ZiblooAlarmsPlugin {
-	/** 全量替换式幂等同步 */
+	/** 提醒域:全量替换式幂等同步 */
 	syncAlarms(alarms: { alarms: NativeAlarm[] }): Promise<{ degraded: boolean }>;
+	/** 计时段边界兜底域:独立于提醒域的全量同步 */
+	syncTimerAlarms(alarms: { alarms: NativeAlarm[] }): Promise<void>;
+	setWebVisible(opts: { visible: boolean }): Promise<void>;
 	getPermission(): Promise<{ state: 'granted' | 'denied' }>;
 	requestPermission(): Promise<{ state: 'granted' | 'denied' }>;
 	showTimerNotification(opts: { title: string; body: string }): Promise<void>;

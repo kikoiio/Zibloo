@@ -1,11 +1,11 @@
 // platform/web/audio.ts — Web 降级实现:HTMLAudioElement 播放 /sounds/<voice>/<event>.wav。
 import type { AudioPort } from '../ports.ts';
-import { soundUrl, type AudioCue, type VoicePreset } from '../../core/zibloo/cues.ts';
+import { soundUrl, type Cue, type VoicePreset } from '../../core/zibloo/cues.ts';
 
 export function createWebAudioPort(getVoice: () => VoicePreset, getMuted: () => boolean): AudioPort {
 	const elements = new Map<string, HTMLAudioElement>();
 
-	function elementFor(cue: AudioCue): HTMLAudioElement {
+	function elementFor(cue: Cue): HTMLAudioElement {
 		const voice = getVoice();
 		const key = `${voice}/${cue}`;
 		let el = elements.get(key);
@@ -34,7 +34,7 @@ export function createWebAudioPort(getVoice: () => VoicePreset, getMuted: () => 
 		},
 		unlock() {
 			if (getMuted()) return;
-			const el = elementFor('call');
+			const el = elementFor('greet');
 			el.volume = 0;
 			el.play().then(() => {
 				el.pause();

@@ -10,12 +10,15 @@ export const reminders: {
 	loaded: boolean;
 	unschedulable: { id: string; reason: string }[];
 	degraded: boolean;
+	/** 原生精确闹钟权限:'granted' | 'denied' | 'unsupported'(web) */
+	exactState: 'granted' | 'denied' | 'unsupported';
 	nextFires: Map<string, number>;
 } = $state({
 	list: [],
 	loaded: false,
 	unschedulable: [],
 	degraded: false,
+	exactState: 'unsupported',
 	nextFires: new Map()
 });
 
@@ -31,6 +34,7 @@ export async function syncReminderAlarms(): Promise<void> {
 		alarms.map((a: PlannedAlarm) => ({ reminderId: a.reminderId, at: a.at, label: a.label }))
 	);
 	reminders.degraded = result.degraded === 'noExactAlarm';
+	reminders.exactState = await ports.alarmPort.getPermission();
 	reminders.unschedulable = unschedulable;
 	reminders.nextFires = new Map(alarms.map((a) => [a.reminderId, a.at]));
 }
@@ -65,5 +69,11 @@ export async function toggleReminder(id: string): Promise<void> {
 export async function deleteReminder(id: string): Promise<void> {
 	await getDb().reminders.delete(id);
 	reminders.list = reminders.list.filter((r) => r.id !== id);
+	await syncReminderAlarms();
+}
+
+/** 用户从系统设置返回后调用:重查权限并全量重排 */
+export async function refreshPermission(): Promise<void> {
+	reminders.exactState = await ports.alarmPort.requestPermission();
 	await syncReminderAlarms();
 }
