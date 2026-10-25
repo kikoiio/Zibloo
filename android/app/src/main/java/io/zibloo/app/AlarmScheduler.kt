@@ -24,7 +24,6 @@ data class AlarmItem(
 }
 
 object AlarmScheduler {
-    private const val ALARM_ACTION = "io.zibloo.app.ALARM_FIRED"
 
     fun parse(list: List<Map<String, Any?>>): List<AlarmItem> =
         list.map {
@@ -73,7 +72,9 @@ object AlarmScheduler {
     }
 
     private fun pendingIntent(context: Context, item: AlarmItem, domain: String): PendingIntent {
-        val intent = Intent(ALARM_ACTION).setPackage(context.packageName)
+        // 必须显式组件:manifest receiver 无 intent-filter,action+package 的隐式广播
+        // 解析不到接收者,会在入队瞬间被系统丢弃(disp=0, terminalCount=0)
+        val intent = Intent(context, AlarmReceiver::class.java)
             .putExtra("domain", domain)
             .putExtra("reminderId", item.reminderId)
             .putExtra("at", item.at)
