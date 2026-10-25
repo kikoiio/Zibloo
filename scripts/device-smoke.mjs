@@ -53,16 +53,21 @@ const result = await evaluate(`
 		await waitFor(() => document.querySelectorAll('.entry').length >= 3, '主页入口');
 		const entry = [...document.querySelectorAll('.entry')].find((e) => e.textContent.includes('记事'));
 		entry.click();
-		await waitFor(() => document.querySelector('.form'), '提醒表单');
+		await waitFor(() => document.querySelector('.form input[type="text"]'), '名称输入框');
 		const text = document.querySelector('.form input[type="text"]');
 		text.value = ${JSON.stringify(label)};
 		text.dispatchEvent(new Event('input', { bubbles: true }));
-		const once = [...document.querySelectorAll('.chip')].find((c) => c.textContent.trim() === '一次性');
+		const once = await waitFor(
+			() => [...document.querySelectorAll('.chip')].find((c) => c.textContent.trim() === '一次性'),
+			'一次性 chip'
+		);
 		once.click();
-		const num = document.querySelector('.form input[type="number"]');
+		// Svelte 条件渲染在微任务后落地,必须等分钟输入框出现
+		const num = await waitFor(() => document.querySelector('.form input[type="number"]'), '分钟输入框');
 		num.value = ${JSON.stringify(minutes)};
 		num.dispatchEvent(new Event('input', { bubbles: true }));
-		document.querySelector('.btn.add').click();
+		const add = await waitFor(() => document.querySelector('.btn.add'), '添加按钮');
+		add.click();
 		await waitFor(
 			() => [...document.querySelectorAll('.row')].some((r) => r.textContent.includes(${JSON.stringify(label)})),
 			'提醒列表出现新行'
