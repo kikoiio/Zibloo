@@ -1,0 +1,142 @@
+name: Android Emulator Test
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/prototype-b2-c3]
+    paths:
+      - 'android/**'
+      - 'src/**'
+      - 'scripts/device-smoke.mjs'
+      - '.github/workflows/android-emulator.yml'
+permissions:
+  contents: read
+concurrency:
+  group: emulator-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  emulator-reliability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --no-audit --no-fund
+      - name: Build web app and sync
+        run: |
+          npm run build
+          npx cap sync android
+      - name: Install emulator system image
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "system-images;android-35;google_apis;x86_64" "emulator" > /dev/null
+      - name: Boot headless emulator
+        run: |
+          test -e /dev/kvm && echo "KVM ok"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
+            -n test -k "system-images;android-35;google_apis;x86_64" -d pixel_6
+          "$ANDROID_HOME/emulator/emulator" -avd test -no-window -no-audio \
+            -no-boot-anim -gpu swiftshader_indirect -no-snapshot -memory 3072 &
+          adb wait-for-device
+          boot=""
+          for i in $(seq 1 120); do
+            boot=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            [ "$boot" = "1" ] && break
+            sleep 5
+          done
+          [ "$boot" = "1" ] || { echo "模拟器未完成启动"; exit 1; }
+          echo "模拟器启动完成"
+      - name: Build, install APK, grant permissions
+        run: |
+          chmod +x android/gradlew
+          android/gradlew -p android assembleDebug --no-daemon
+          adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+          adb shell pm grant io.zibloo.app android.permission.POST_NOTIFICATIONS || true
+          adb shell appops set io.zibloo.app SCHEDULE_EXACT_ALARM allow || true
+      - name: Forward WebView debug port
+        run: |
+          adb shell am start -n io.zibloo.app/.MainActivity
+          sleep 8
+          socket=$(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | head -1)
+          [ -n "$socket" ] || { echo "未找到 WebView 调试 socket"; adb logcat -d | tail -50; exit 1; }
+          adb forward tcp:9222 localabstract:"$socket"
+      - name: 'Phase A: 杀进程后提醒仍触发 (V2-lite)'
+        run: |
+          REMINDER_LABEL='冒烟A' REMINDER_MINUTES=1 node scripts/device-smoke.mjs
+          adb shell input keyevent KEYCODE_HOME
+          sleep 2
+          adb shell am kill io.zibloo.app
+          sleep 2
+          if adb shell pidof io.zibloo.app | grep -q .; then
+            echo "进程未被杀掉"; exit 1
+          fi
+          echo "进程已死,等待闹钟触发(最长 120s)…"
+          for i in $(seq 1 40); do
+            if adb shell dumpsys notification --noredact | grep -q "冒烟A"; then
+              echo "V2-lite 通过:杀进程后提醒照响"
+              adb exec-out screencap -p > artifacts-v2.png || true
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "V2-lite 失败:通知未出现"
+          adb shell dumpsys alarm | grep -A3 zibloo || true
+          exit 1
+      - name: 'Phase B: 重启后从镜像重建 (V3-lite)'
+        run: |
+          adb shell cmd notification remove-all || true
+          adb shell am start -n io.zibloo.app/.MainActivity
+          sleep 8
+          socket=$(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | head -1)
+          adb forward tcp:9222 localabstract:"$socket"
+          REMINDER_LABEL='冒烟B' REMINDER_MINUTES=2 node scripts/device-smoke.mjs
+          adb shell input keyevent KEYCODE_HOME
+          sleep 2
+          adb shell am kill io.zibloo.app
+          echo "重启设备,验证 BootReceiver 重建…"
+          adb reboot
+          adb wait-for-device
+          boot=""
+          for i in $(seq 1 120); do
+            boot=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')
+            [ "$boot" = "1" ] && break
+            sleep 5
+          done
+          [ "$boot" = "1" ] || { echo "重启后未完成启动"; exit 1; }
+          echo "重启完成,等待重建的闹钟触发(最长 180s)…"
+          for i in $(seq 1 60); do
+            if adb shell dumpsys notification --noredact | grep -q "冒烟B"; then
+              echo "V3-lite 通过:重启后提醒从镜像重建并触发"
+              adb exec-out screencap -p > artifacts-v3.png || true
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "V3-lite 失败"
+          adb shell dumpsys alarm | grep -A3 zibloo || true
+          exit 1
+      - name: Save evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-evidence
+          path: |
+            artifacts-*.png
+          retention-days: 7
+      - name: Dump logcat on failure
+        if: failure()
+        run: adb logcat -d > logcat.txt
+      - name: Save logcat
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-logcat
+          path: logcat.txt
+          retention-days: 7
