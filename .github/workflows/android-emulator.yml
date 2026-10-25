@@ -94,9 +94,18 @@ jobs:
         run: |
           adb shell am start -n io.zibloo.app/.MainActivity
           sleep 8
-          socket=$(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | head -1)
-          [ -n "$socket" ] || { echo "未找到 WebView 调试 socket"; adb logcat -d | tail -50; exit 1; }
-          adb forward tcp:9222 localabstract:"$socket"
+          forward_app_page() {
+            # WebView 各进程各有调试 socket,只有能列出应用页面的才是主进程
+            for attempt in 1 2 3; do
+              for s in $(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | sort -u); do
+                adb forward tcp:9222 localabstract:"$s" > /dev/null
+                if curl -s http://127.0.0.1:9222/json | grep -q localhost; then return 0; fi
+              done
+              sleep 3
+            done
+            return 1
+          }
+          forward_app_page || { echo "未找到可用的 WebView 页面 target"; adb logcat -d | tail -50; exit 1; }
       - name: 'Phase A: 杀进程后提醒仍触发 (V2-lite)'
         run: |
           REMINDER_LABEL='冒烟A' REMINDER_MINUTES=1 node scripts/device-smoke.mjs
@@ -135,8 +144,13 @@ jobs:
           adb shell cmd notification remove-all || true
           adb shell am start -n io.zibloo.app/.MainActivity
           sleep 8
-          socket=$(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | head -1)
-          adb forward tcp:9222 localabstract:"$socket"
+          for attempt in 1 2 3; do
+            for s in $(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | sort -u); do
+              adb forward tcp:9222 localabstract:"$s" > /dev/null
+              if curl -s http://127.0.0.1:9222/json | grep -q localhost; then break 2; fi
+            done
+            sleep 3
+          done
           REMINDER_LABEL='冒烟B' REMINDER_MINUTES=2 node scripts/device-smoke.mjs
           adb shell input keyevent KEYCODE_HOME
           for i in $(seq 1 15); do
