@@ -37,9 +37,18 @@ jobs:
       - name: Install Android SDK tools
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "system-images;android-35;google_apis;x86_64" \
-            "emulator" "platform-tools" > /dev/null
+          # dl.google.com 的仓库 XML 偶发截断,重试兜底
+          ok=""
+          for attempt in 1 2 3; do
+            if "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+                 "system-images;android-35;google_apis;x86_64" \
+                 "emulator" "platform-tools" > /tmp/sdkmanager.log 2>&1; then
+              ok=1; break
+            fi
+            echo "sdkmanager 第 $attempt 次失败,重试…"; tail -5 /tmp/sdkmanager.log
+            sleep 10
+          done
+          [ -n "$ok" ] || { echo "sdkmanager 三次失败"; cat /tmp/sdkmanager.log; exit 1; }
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
       - name: Boot headless emulator
