@@ -1,4 +1,4 @@
-// core/timer/types.ts — 计时模型。不变式(A0 §2):剩余时间永远是 f(锚点时间戳, now) 的
+// core/timer/types.ts — 计时模型。不变式:剩余时间永远是 f(锚点时间戳, now) 的
 // 推导,不存在于存储;segments 展开为不可变的绝对起止时间戳,进程可随时死。
 
 export type SessionKind = 'training' | 'focus' | 'quick';

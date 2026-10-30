@@ -12,7 +12,7 @@ object AlarmDomain {
     const val TIMER = "T"
 }
 
-/** 闹钟载荷:原生层只收绝对时刻与已翻译文案,不理解规则语义(A0 §2.4)。 */
+/** 闹钟载荷:原生层只收绝对时刻与已翻译文案,不理解规则语义。 */
 data class AlarmItem(
     val reminderId: String,
     val at: Long,

@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// A0 §3:依赖方向单向,core 不依赖任何人。此测试扫描源码强制边界,
+// 依赖方向单向,core 不依赖任何人。此测试扫描源码强制边界,
 // 替代 ESLint no-restricted-imports 的最小实现。
 const CORE_DIR = import.meta.dirname;
 

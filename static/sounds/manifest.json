@@ -1,7 +1,7 @@
 {
   "version": 1,
   "default": "chirrup",
-  "selection": "User selected E 灵巧啾噜 and G 清透轻呼 for the prototype.",
+  "selection": "User selected E 灵巧啾噜 (chirrup, default) and G 清透轻呼 (breeze).",
   "presets": {
     "chirrup": {
       "code": "E",

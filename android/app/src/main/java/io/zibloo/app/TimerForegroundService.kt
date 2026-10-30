@@ -13,7 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 
 /**
- * 计时运行中的前台服务:只负责保活与常驻通知,不 tick 计时(A0 §5.1)。
+ * 计时运行中的前台服务:只负责保活与常驻通知,不 tick 计时。
  * 剩余时间由 WebView 侧的纯推导驱动,经插件更新文案;段边界由 AlarmManager 兜底。
  */
 class TimerForegroundService : Service() {

@@ -1,4 +1,4 @@
-// core/timer/presets.ts — 自定义训练预设:保存当前参数为命名条目,避免反复设置(PRD §3.2)。
+// core/timer/presets.ts — 自定义训练预设:保存当前参数为命名条目,避免反复设置。
 import type { TrainingPlan } from './types.ts';
 import { expandSegments, PlanError } from './engine.ts';
 

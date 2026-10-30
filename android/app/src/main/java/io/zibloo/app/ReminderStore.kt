@@ -7,7 +7,7 @@ import org.json.JSONObject
 
 /**
  * 闹钟载荷镜像(SharedPreferences JSON,commit 落盘),按域分键存储:
- * 重启后 BootReceiver 不依赖 WebView 即可重建提醒域(A0 §5.3);
+ * 重启后 BootReceiver 不依赖 WebView 即可重建提醒域;
  * 计时域随进程消失,重启后只清不建。
  */
 object ReminderStore {

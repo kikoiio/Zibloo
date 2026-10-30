@@ -1,5 +1,5 @@
-// core/zibloo/mapping.ts — appState → ZiblooPresentation 的唯一实现(PRD §2.2 状态表)。
-// 无持久数值,每次现算;前台动画与后台通知共用同一份语义(A0 §2.3)。
+// core/zibloo/mapping.ts — appState → ZiblooPresentation 的唯一实现。
+// 无持久数值,每次现算;前台动画与后台通知共用同一份语义。
 import type { PhaseView, SessionKind } from '../timer/types.ts';
 import type { Cue } from './cues.ts';
 
@@ -36,7 +36,7 @@ export type ZiblooPresentation = {
 	pose: ZiblooPose;
 	expression: ZiblooExpression;
 	motion: MotionPreset;
-	/** P2 装饰叠加,非替换;P1 恒空 */
+	/** 后期装饰叠加,非替换;首版恒空 */
 	overlay: string[];
 	cue: Cue | null;
 	particles: 'bubbles' | 'none';
@@ -47,7 +47,7 @@ export type ZiblooPresentation = {
 export function mapZibloo(input: MapZiblooInput): ZiblooPresentation {
 	const base = { overlay: [] as string[], motion: (input.reducedMotion ? 'static' : 'full') as MotionPreset };
 
-	// 优先级:召唤 > 庆祝 > 打招呼 > 运行中 > 待机(PRD §2.2 表顺序)
+	// 优先级:召唤 > 庆祝 > 打招呼 > 运行中 > 待机
 	if (input.reminding) {
 		return {
 			...base,

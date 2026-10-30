@@ -1,5 +1,5 @@
 // core/reminders/rule.ts — 提醒规则纯函数。存「本地时刻」,时区与夏令时在函数内处理;
-// 原生层(见 platform)只收绝对时刻,不理解规则语义(A0 §2.4)。
+// 原生层(见 platform)只收绝对时刻,不理解规则语义。
 import { addDays, zonedEpoch, zonedParts } from '../tz.ts';
 
 export type LocalTime = { hour: number; minute: number };

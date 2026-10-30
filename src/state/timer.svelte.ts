@@ -1,6 +1,6 @@
 // state/timer.svelte.ts — 当前会话状态与唯一副作用编排点:
 // 引擎(纯) → 这里 → Dexie / 端口 / UI。
-// 叫声与前台通知文案一律消费 mapZibloo 的输出(PRD §2.2/§2.4 唯一实现,A0 §0 单映射表)。
+// 叫声与前台通知文案一律消费 mapZibloo 的输出(唯一映射表)。
 import * as engine from '../core/timer/engine.ts';
 import { planSessionAlarms } from '../core/timer/engine.ts';
 import type { Session, SessionKind, TimerPlan, PhaseView } from '../core/timer/types.ts';
@@ -83,7 +83,7 @@ function handleBoundaries(): void {
 	}
 }
 
-/** 段边界原生兜底闹钟(A0 §5.1):暂停即撤销,恢复/跳段重排,结束清空。 */
+/** 段边界原生兜底闹钟:暂停即撤销,恢复/跳段重排,结束清空。 */
 function syncTimerAlarms(): void {
 	const s = timer.session;
 	if (!s || s.endedAt !== null || s.pausedAt !== null) {
@@ -240,7 +240,7 @@ export function greet(): void {
 	}, 1_500);
 }
 
-/** 提醒到点召唤:跳出来叫你(PRD §2.2) */
+/** 提醒到点召唤:跳出来叫你 */
 export function flashReminder(): void {
 	timer.reminding = true;
 	ports.audioPort.play('reminder');

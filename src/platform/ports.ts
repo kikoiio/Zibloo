@@ -7,7 +7,7 @@ export type PlannedAlarmPayload = {
 	label: string;
 };
 
-/** 段边界兜底闹钟(A0 §5.1):App 被杀/页面不可见时由原生到点发声 */
+/** 段边界兜底闹钟:App 被杀/页面不可见时由原生到点发声 */
 export type TimerAlarmPayload = {
 	/** 稳定 id:sessionId:segmentIndex */
 	id: string;
@@ -20,7 +20,7 @@ export type TimerAlarmPayload = {
 export type Unsubscribe = () => void;
 
 /**
- * 提醒闹钟域:全量替换式幂等同步,结构上无法表达「漏取消」(A0 §0)。
+ * 提醒闹钟域:全量替换式幂等同步,结构上无法表达「漏取消」。
  * timer 域独立同步,互不清除对方的闹钟。
  */
 export interface AlarmPort {
@@ -43,7 +43,7 @@ export interface AudioPort {
 	unlock(): void;
 }
 
-/** 计时前台服务(A0 §5.1):保活与常驻通知,不 tick 计时;Web 端为 no-op */
+/** 计时前台服务:保活与常驻通知,不 tick 计时;Web 端为 no-op */
 export interface ForegroundPort {
 	showTimer(title: string, body: string): void;
 	hideTimer(): void;

@@ -19,9 +19,8 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 
 /**
- * zibloo-alarms 插件(A0 §1):双域(提醒/计时段边界)幂等闹钟同步、
+ * zibloo-alarms 插件:双域(提醒/计时段边界)幂等闹钟同步、
  * 精确闹钟权限引导、前台计时通知、到点事件上报。
- * 对应 PRD §4.1 的安卓可靠性路径。
  */
 @CapacitorPlugin(name = "ZiblooAlarms")
 class ZiblooAlarmsPlugin : Plugin() {
@@ -58,7 +57,7 @@ class ZiblooAlarmsPlugin : Plugin() {
         }
     }
 
-    /** 提醒域:全量替换式幂等同步,结构上无法表达「漏取消」(A0 §0) */
+    /** 提醒域:全量替换式幂等同步,结构上无法表达「漏取消」 */
     @PluginMethod
     fun syncAlarms(call: PluginCall) {
         val exact = syncDomain(call, ReminderStore.KEY_REMINDERS, AlarmDomain.REMINDER)
@@ -135,7 +134,7 @@ class ZiblooAlarmsPlugin : Plugin() {
         call.resolve(result)
     }
 
-    /** 计时前台服务(A0 §5.1) */
+    /** 计时前台服务 */
     @PluginMethod
     fun showTimerNotification(call: PluginCall) {
         TimerForegroundService.show(

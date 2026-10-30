@@ -1,5 +1,5 @@
 // platform/web/alarms.ts — Web 降级实现:页面存活期内的 setTimeout 闹钟。
-// 网页版明确不承诺 PRD §4.1(V1–V3 验收对象为安卓端)。
+// 网页版明确不承诺 V1–V3(验收对象为安卓端)。
 import type { AlarmPort, PlannedAlarmPayload, Unsubscribe } from '../ports.ts';
 
 const MAX_TIMEOUT = 2_147_000_000; // setTimeout 上限(留余量)

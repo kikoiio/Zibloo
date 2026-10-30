@@ -1,5 +1,5 @@
 <script lang="ts">
-	// ZiblooPresenter — 只吃 ZiblooPresentation(A0 §3)。渲染 B2 五姿态帧:
+	// ZiblooPresenter — 只吃 ZiblooPresentation。渲染 B2 五姿态帧:
 	// 四帧划水循环 + 抬爪招呼;整图轻悬浮;reduced-motion 时冻结。
 	import type { ZiblooPresentation } from '../core/zibloo/mapping.ts';
 

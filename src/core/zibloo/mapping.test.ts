@@ -10,7 +10,7 @@ function view(phase: PhaseView['phase'], remainMs = 30_000): PhaseView {
 
 const idle = { activity: 'none' as const, view: null, paused: false, celebrating: false, reminding: false, greeted: false, reducedMotion: false };
 
-describe('mapZibloo:PRD §2.2 状态表', () => {
+describe('mapZibloo:状态表', () => {
 	it('待机:漂浮、眨眼、气泡', () => {
 		const p = mapZibloo(idle);
 		expect(p).toMatchObject({ pose: 'idle-float', expression: 'blink', particles: 'bubbles', cue: null, motion: 'full' });

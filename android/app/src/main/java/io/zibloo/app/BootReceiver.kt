@@ -6,7 +6,7 @@ import android.content.Intent
 
 /**
  * 重启/覆盖安装后从镜像重建提醒域闹钟(V3)。
- * 规则表为唯一事实源,原生调度只是它的投影(A0 §2.2)。
+ * 规则表为唯一事实源,原生调度只是它的投影。
  * 计时域随进程消失:会话已不存在,重建会造成幽灵响铃,只清不建。
  */
 class BootReceiver : BroadcastReceiver() {

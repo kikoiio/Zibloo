@@ -111,7 +111,7 @@ jobs:
           REMINDER_LABEL='冒烟A' REMINDER_MINUTES=1 node scripts/device-smoke.mjs
           adb shell input keyevent KEYCODE_HOME
           sleep 2
-          # am kill 会把包置为 stopped 态,广播被系统丢弃;PRD V2 是"进程被杀"而非"停止应用",
+          # am kill 会把包置为 stopped 态,广播被系统丢弃;V2 是"进程被杀"而非"停止应用",
           # 用 root SIGKILL 模拟系统回收/崩溃死亡(不进 stopped 态)
           adb root > /dev/null
           adb wait-for-device

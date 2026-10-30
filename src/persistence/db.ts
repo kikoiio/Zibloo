@@ -1,4 +1,4 @@
-// persistence/db.ts — Dexie(IndexedDB)单栈持久化(A0 §1)。仓库不上抛,只在浏览器内使用。
+// persistence/db.ts — Dexie 存历史与提醒。仓库不上抛,只在浏览器内使用。
 import Dexie, { type EntityTable } from 'dexie';
 import type { HistoryEntry } from '../core/history/history.ts';
 import type { Reminder } from '../core/reminders/rule.ts';

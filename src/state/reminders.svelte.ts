@@ -26,7 +26,7 @@ function timezone(): string {
 	return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 }
 
-/** 规则表 → 期望闹钟集合 → AlarmPort 全量幂等同步(A0 §2.2)。 */
+/** 规则表 → 期望闹钟集合 → AlarmPort 全量幂等同步。 */
 export async function syncReminderAlarms(): Promise<void> {
 	if (typeof window === 'undefined') return;
 	const { alarms, unschedulable } = planAlarms(reminders.list, Date.now(), timezone());

@@ -1,4 +1,4 @@
-// core/history/history.ts — 历史记录类型与统计纯函数(P1:今日陪伴;图表在 P2)。
+// core/history/history.ts — 历史记录类型与统计纯函数(今日陪伴;周图表未做)。
 import type { SessionKind } from '../timer/types.ts';
 import { startOfDay } from '../tz.ts';
 

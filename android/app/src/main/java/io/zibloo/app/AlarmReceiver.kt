@@ -16,8 +16,8 @@ import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 
 /**
- * 到点接收器:直接发通知 + 原生 MediaPlayer 播叫声 + 震动,不依赖 WebView 存活
- * (PRD §4.1 / A0 §5.2);铃声资源随 APK 打包。
+ * 到点接收器:直接发通知 + 原生 MediaPlayer 播叫声 + 震动,不依赖 WebView 存活;
+ * 铃声资源随 APK 打包。
  *
  * 计时域可见性去重:WebView 存活且页面可见时让位给 JS(它自己会发声/更新 UI),
  * 其余情况(被杀、后台、锁屏)由这里发声。

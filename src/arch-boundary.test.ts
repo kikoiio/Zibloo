@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// A0 §3:依赖方向单向。UI 层(routes/zibloo)只许走 state/core/i18n,
+// 依赖方向单向。UI 层(routes/zibloo)只许走 state/core/i18n,
 // 禁止直连 platform/@capacitor/dexie/persistence——平台副作用一律经 state 编排。
 const UI_DIRS = [join(import.meta.dirname, 'routes'), join(import.meta.dirname, 'zibloo')];
 

@@ -1,5 +1,5 @@
 // core/reminders/plan.ts — 规则集 → 期望闹钟集合(纯)。规则表是唯一事实源,
-// 原生调度只是它的投影;不一致时以规则表重排(A0 §2.2)。
+// 原生调度只是它的投影;不一致时以规则表重排。
 import type { Reminder } from './rule.ts';
 import { nextTrigger } from './rule.ts';
 
