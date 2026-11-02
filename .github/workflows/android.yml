@@ -1,7 +1,7 @@
 name: Android APK
 on:
   push:
-    branches: [codex/prototype-b2-c3]
+    branches: [main]
     paths:
       - 'android/**'
       - 'src/**'

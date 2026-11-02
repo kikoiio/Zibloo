@@ -122,7 +122,7 @@ Cue:`work | rest | complete | greet | reminder`。Web 播 `static/sounds/<voice>
 | 模拟器可靠性 | `.github/workflows/android-emulator.yml` + `scripts/device-smoke.mjs` |
 | 真机 V1–V3 | [`runbooks/device-acceptance.md`](runbooks/device-acceptance.md),尚未记录结果 |
 
-默认分支 `codex/prototype-b2-c3`。无 Issue / Release。
+默认分支 `main`。无 Issue / Release。
 
 ## 演进落点
 
