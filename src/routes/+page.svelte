@@ -300,8 +300,7 @@
 		</div>
 	{:else}
 		<div
-			class="zb-card"
-			class:timer
+			class="zb-card timer"
 			class:quick={card.kind === 'quick'}
 			class:clock={run !== null}
 			class:paused={run !== null && run.session.pausedAt !== null}
