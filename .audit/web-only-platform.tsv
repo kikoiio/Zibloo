@@ -1,0 +1,9 @@
+ts	phase	decision	why	evidence	result
+2026-11-04T04:59:59Z	frame	把浏览器网页定为唯一维护目标，并暂停其他平台	看板当前只需要网页能力；原生代码和构建链没有继续维护的必要	docs/decisions/0009-web-only.md	accepted
+2026-11-04T04:59:59Z	cleanup	移除 Android、Capacitor、原生计时闹钟与通知路径，保留网页计时和音频	网页状态不再依赖平台分支；旧闹钟投影和通知文案已无调用方	src/platform/index.ts, src/state/runs.svelte.ts, src/state/timer.svelte.ts	active source is web-only
+2026-11-04T04:59:59Z	artifacts	删除本机 APK 与 GitHub APK/模拟器 artifacts，并修剪本地 Capacitor 依赖	用户要求不再生成或保留其他端产物	dist/app-debug.apk; GitHub Actions artifacts; package-lock.json	APK/emulator artifacts absent; web-smoke retained
+2026-11-04T05:01:44Z	source-check	静态清点确认仓库代码、工作流和依赖只保留网页端	以实际路径和包依赖检查目标状态	src/platform; .github/workflows; package.json; find *.apk	VERIFIED
+2026-11-04T05:01:44Z	artifacts-check	复核 GitHub Actions artifact 清单仅有网页冒烟产物	确认远端旧 APK 与模拟器产物均已删除	https://api.github.com/repos/kikoiio/Zibloo/actions/artifacts?per_page=100	only web-smoke artifacts remain
+2026-11-04T05:04:37Z	review-fixes	补充语音与提醒决策的过期平台说明，并修正备份 UI 描述	独立审阅指出这些历史条目可能被误读为当前实现	docs/decisions/0004-voice-presets-chirrup-breeze.md; docs/decisions/0006-drop-reminders.md; docs/architecture.md	corrected
+2026-11-04T05:04:37Z	artifact-evidence	记录删除前 Android artifact ID 与删除后仅剩的网页冒烟 artifact ID	为远端删除提供可复核的前后清单	GET https://api.github.com/repos/kikoiio/Zibloo/actions/artifacts; deleted 13295635926,13294996242,13294845143,13294718634,13294339579,13294232224,13294229921,13294163373,13293903025,13293599870,13293479650,13113560823,13113002455,13112533403,12589773519,12588351667,12585500511,12585423856,12583753033; remaining 13295410847,13295038219,13294412541,13294132559,13293439134,13113277101	only web-smoke remains
+2026-11-04T05:05:53Z	review	独立审阅复核修订后的清理与证据	独立视角复核旧平台记录、备份 UI 描述和 GitHub artifact 清单	docs/decisions/0004-voice-presets-chirrup-breeze.md; docs/decisions/0006-drop-reminders.md; docs/architecture.md; .audit/web-only-platform.tsv	No flags (gpt-6.1-sol)

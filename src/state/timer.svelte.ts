@@ -1,16 +1,13 @@
 // state/timer.svelte.ts — 当前会话状态与唯一副作用编排点:
 // 引擎(纯) → 这里 → Dexie / 端口 / UI。
-// 叫声与前台通知文案一律消费 mapZibloo 的输出(唯一映射表)。
+// 计时提示音消费 mapZibloo 的输出(唯一映射表)。
 import * as engine from '../core/timer/engine.ts';
-import { planSessionAlarms } from '../core/timer/engine.ts';
 import type { Session, SessionKind, TimerPlan, PhaseView } from '../core/timer/types.ts';
 import type { HistoryEntry } from '../core/history/history.ts';
 import { mapZibloo, type ZiblooPresentation } from '../core/zibloo/mapping.ts';
 import { getDb } from '../persistence/db.ts';
 import { ports } from './ports.svelte.ts';
 import { settings } from './settings.svelte.ts';
-import { t } from './i18n.svelte.ts';
-import type { MessageKey } from '../i18n/messages.ts';
 
 export const timer: {
 	session: Session | null;
@@ -31,7 +28,6 @@ export const timer: {
 });
 
 let ticker: ReturnType<typeof setInterval> | null = null;
-let visibilityWired = false;
 let lastFiredSegment = -1;
 
 export function currentView(): PhaseView | null {
@@ -56,10 +52,7 @@ function webVisible(): boolean {
 	return typeof document === 'undefined' || document.visibilityState === 'visible';
 }
 
-/**
- * 段边界副作用:叫声(仅页面可见时;不可见/被杀由原生兜底闹钟发声)
- * 与前台通知文案(从 presentation.notification 派生)。
- */
+/** 段边界副作用:页面可见时播放提示音。 */
 function handleBoundaries(): void {
 	const s = timer.session;
 	if (!s) return;
@@ -70,51 +63,10 @@ function handleBoundaries(): void {
 	if (presentation.cue && webVisible()) {
 		ports.audioPort.play(presentation.cue);
 	}
-	if (presentation.notification) {
-		// core 保持纯(string key),在 state 边界收窄回字面量类型
-		ports.foregroundPort.showTimer(
-			t(presentation.notification.titleKey as MessageKey),
-			t(presentation.notification.bodyKey as MessageKey)
-		);
-	}
-}
-
-/** 段边界原生兜底闹钟:暂停即撤销,恢复/跳段重排,结束清空。 */
-function syncTimerAlarms(): void {
-	const s = timer.session;
-	if (!s || s.endedAt !== null || s.pausedAt !== null) {
-		void ports.alarmPort.syncTimerAlarms([]);
-		return;
-	}
-	const voice = settings.voice;
-	void ports.alarmPort.syncTimerAlarms(
-		planSessionAlarms(s, Date.now()).map((a, i) => {
-			const cue = a.kind === 'complete' ? 'complete' : a.toPhase === 'work' ? 'work' : 'rest';
-			const bodyKey: MessageKey =
-				a.kind === 'complete' ? 'zibloo.notif.complete.body' : cue === 'work' ? 'notif.phase.work' : 'notif.phase.rest';
-			return {
-				id: `${s.id}:${i}`,
-				at: a.at,
-				title: t('app.name'),
-				body: t(bodyKey),
-				soundRes: `${voice}_${cue}`
-			};
-		})
-	);
-}
-
-function wireVisibility(): void {
-	if (visibilityWired || typeof document === 'undefined') return;
-	visibilityWired = true;
-	ports.alarmPort.setWebVisible(document.visibilityState === 'visible');
-	document.addEventListener('visibilitychange', () => {
-		ports.alarmPort.setWebVisible(document.visibilityState === 'visible');
-	});
 }
 
 function ensureTicker(): void {
 	if (typeof window === 'undefined') return;
-	wireVisibility();
 	if (ticker) return;
 	timer.now = Date.now();
 	ticker = setInterval(() => {
@@ -157,8 +109,6 @@ function complete(recorded: 'completed' | 'ended-early' | 'skipped'): void {
 	timer.celebrating = true;
 	timer.completedAt = Date.now();
 	lastFiredSegment = -1;
-	ports.foregroundPort.hideTimer();
-	void ports.alarmPort.syncTimerAlarms([]);
 	if (webVisible()) ports.audioPort.play('complete');
 	// 庆祝数秒后收尾,回到主页
 	setTimeout(() => {
@@ -183,7 +133,6 @@ export function startSession(kind: SessionKind, plan: TimerPlan): void {
 	timer.completedAt = null;
 	timer.now = now;
 	lastFiredSegment = -1;
-	syncTimerAlarms();
 	handleBoundaries();
 	ensureTicker();
 }
@@ -192,8 +141,6 @@ export function pause(): void {
 	if (timer.session) {
 		timer.session = engine.pause(timer.session, Date.now());
 		ports.audioPort.stopAll();
-		// 暂停后旧边界全部失效;恢复时重排
-		void ports.alarmPort.syncTimerAlarms([]);
 	}
 }
 
@@ -201,7 +148,6 @@ export function resume(): void {
 	if (timer.session) {
 		timer.session = engine.resume(timer.session, Date.now());
 		lastFiredSegment = -1;
-		syncTimerAlarms();
 	}
 }
 
@@ -215,7 +161,6 @@ export function skip(): void {
 		return;
 	}
 	lastFiredSegment = -1;
-	syncTimerAlarms();
 	handleBoundaries();
 }
 

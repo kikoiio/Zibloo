@@ -14,7 +14,6 @@ describe('mapZibloo:状态表', () => {
 	it('待机:漂浮、眨眼、气泡', () => {
 		const p = mapZibloo(idle);
 		expect(p).toMatchObject({ pose: 'idle-float', expression: 'blink', particles: 'bubbles', cue: null, motion: 'full' });
-		expect(p.notification).toBeNull();
 	});
 
 	it('庆祝:欢快动作 + 完成三连', () => {

@@ -1,4 +1,4 @@
-// 开发时走 Vite 代理,避开浏览器跨域。安卓上 CapacitorHttp 会接管 fetch。
+// 开发时走 Vite 代理,避开浏览器跨域。静态网页生产环境直接请求来源。
 const DEV_PROXY = '/api/fetch';
 
 export async function fetchText(url: string): Promise<string> {

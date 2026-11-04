@@ -17,8 +17,8 @@ function walk(dir: string): string[] {
 }
 
 describe('core 层依赖边界', () => {
-	it('core 非测试文件禁止 import svelte/dexie/capacitor/kit', () => {
-		const banned = ['svelte', 'dexie', '@capacitor', '$app', '$lib', 'vitest'];
+	it('core 非测试文件禁止 import svelte/dexie/kit', () => {
+		const banned = ['svelte', 'dexie', '$app', '$lib', 'vitest'];
 		for (const file of walk(CORE_DIR)) {
 			if (file.endsWith('.test.ts')) continue;
 			const src = readFileSync(file, 'utf8');

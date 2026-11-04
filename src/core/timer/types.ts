@@ -60,11 +60,3 @@ export type PhaseView = {
 	segmentIndex: number;
 	next: { phase: Phase; durationSec: number } | null;
 };
-
-export type AlarmSpec = {
-	sessionId: string;
-	at: number;
-	kind: 'phase' | 'complete';
-	/** 到点后进入的段(末段边界为 complete) */
-	toPhase: Phase;
-};

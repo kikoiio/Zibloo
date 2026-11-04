@@ -1,6 +1,5 @@
 // core/timer/engine.ts — 计时纯函数。任何函数都不读钟、不写存储;now 一律由调用方注入。
 import type {
-	AlarmSpec,
 	PhaseView,
 	Session,
 	SessionKind,
@@ -173,21 +172,4 @@ export function activeMs(s: Session, now: number = Number.POSITIVE_INFINITY): nu
 /** 计划总时长(活跃,不含暂停)。由 plan 推导,对暂停/恢复不变。 */
 export function totalMs(s: Session): number {
 	return expandSegments(s.plan).reduce((acc, d) => acc + d.sec * 1000, 0);
-}
-
-/** 段边界兜底闹钟:只保留未来段尾;末段边界即完成。暂停/恢复后须重算。 */
-export function planSessionAlarms(s: Session, now: number): AlarmSpec[] {
-	if (s.endedAt !== null) return [];
-	return s.segments.flatMap((seg, i) =>
-		seg.endAt > now
-			? [
-					{
-						sessionId: s.id,
-						at: seg.endAt,
-						kind: i === s.segments.length - 1 ? 'complete' : 'phase',
-						toPhase: s.segments[i + 1]?.phase ?? 'work'
-					}
-				]
-			: []
-	);
 }

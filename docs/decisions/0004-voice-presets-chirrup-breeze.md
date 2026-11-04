@@ -19,3 +19,5 @@ date: 2026-10-24
 ## 后果
 
 Cue 只有 `work | rest | complete | greet | reminder` 一套词汇,对应文件名。语音播报是后期功能,不混进这套叫声。
+
+2026-11-04:本文记录的 APK 资源和 MediaPlayer 播放方式已由 [0009](0009-web-only.md) 取代。网页继续使用 `static/sounds/` 中的 WAV 与浏览器音频。

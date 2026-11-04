@@ -1,4 +1,4 @@
-// platform/web/audio.ts — Web 降级实现:HTMLAudioElement 播放 /sounds/<voice>/<event>.wav。
+// platform/web/audio.ts — 网页音频实现:HTMLAudioElement 播放 /sounds/<voice>/<event>.wav。
 import type { AudioPort } from '../ports.ts';
 import { soundUrl, type Cue, type VoicePreset } from '../../core/zibloo/cues.ts';
 

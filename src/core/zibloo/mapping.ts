@@ -1,5 +1,5 @@
 // core/zibloo/mapping.ts — appState → ZiblooPresentation 的唯一实现。
-// 无持久数值,每次现算;前台动画与后台通知共用同一份语义。
+// 无持久数值,每次现算;页面动画与提示音共用同一份语义。
 import type { PhaseView, SessionKind } from '../timer/types.ts';
 import type { Cue } from './cues.ts';
 
@@ -38,8 +38,6 @@ export type ZiblooPresentation = {
 	overlay: string[];
 	cue: Cue | null;
 	particles: 'bubbles' | 'none';
-	/** 后台/锁屏降级通知文案键,与前台同表派生 */
-	notification: { titleKey: string; bodyKey: string } | null;
 };
 
 export function mapZibloo(input: MapZiblooInput): ZiblooPresentation {
@@ -52,45 +50,33 @@ export function mapZibloo(input: MapZiblooInput): ZiblooPresentation {
 			pose: 'celebrate',
 			expression: 'happy',
 			cue: 'complete',
-			particles: 'bubbles',
-			notification: { titleKey: 'zibloo.notif.complete.title', bodyKey: 'zibloo.notif.complete.body' }
+			particles: 'bubbles'
 		};
 	}
 	if (input.greeted) {
-		return { ...base, pose: 'idle-float', expression: 'happy', cue: 'greet', particles: 'bubbles', notification: null };
+		return { ...base, pose: 'idle-float', expression: 'happy', cue: 'greet', particles: 'bubbles' };
 	}
 
 	if (input.view && input.activity !== 'none') {
 		const { phase } = input.view;
 		if (input.paused) {
 			// 暂停:安静陪伴,减少动作
-			return { ...base, motion: 'static', pose: 'focus-quiet', expression: 'blink', cue: null, particles: 'none', notification: notifFor(input.activity) };
+			return { ...base, motion: 'static', pose: 'focus-quiet', expression: 'blink', cue: null, particles: 'none' };
 		}
 		if (input.activity === 'training' || input.activity === 'quick') {
 			if (phase === 'work') {
-				return { ...base, pose: 'train-exert', expression: 'wide', cue: 'work', particles: 'bubbles', notification: notifFor(input.activity) };
+				return { ...base, pose: 'train-exert', expression: 'wide', cue: 'work', particles: 'bubbles' };
 			}
 			// prepare / rest 都按放松陪伴
-			return { ...base, pose: 'train-rest', expression: 'blink', cue: phase === 'rest' || phase === 'long-rest' ? 'rest' : null, particles: 'none', notification: notifFor(input.activity) };
+			return { ...base, pose: 'train-rest', expression: 'blink', cue: phase === 'rest' || phase === 'long-rest' ? 'rest' : null, particles: 'none' };
 		}
 		// focus
 		if (phase === 'work') {
-			return { ...base, pose: 'focus-quiet', expression: 'focused', cue: null, particles: 'none', notification: notifFor('focus') };
+			return { ...base, pose: 'focus-quiet', expression: 'focused', cue: null, particles: 'none' };
 		}
 		// 休息:苏醒伸展
-		return { ...base, pose: 'focus-stir', expression: 'blink', cue: 'rest', particles: 'none', notification: notifFor('focus') };
+		return { ...base, pose: 'focus-stir', expression: 'blink', cue: 'rest', particles: 'none' };
 	}
 
-	return { ...base, pose: 'idle-float', expression: 'blink', cue: null, particles: input.reducedMotion ? 'none' : 'bubbles', notification: null };
-}
-
-function notifFor(kind: SessionKind): { titleKey: string; bodyKey: string } {
-	switch (kind) {
-		case 'training':
-			return { titleKey: 'zibloo.notif.training.title', bodyKey: 'zibloo.notif.training.body' };
-		case 'focus':
-			return { titleKey: 'zibloo.notif.focus.title', bodyKey: 'zibloo.notif.focus.body' };
-		case 'quick':
-			return { titleKey: 'zibloo.notif.quick.title', bodyKey: 'zibloo.notif.quick.body' };
-	}
+	return { ...base, pose: 'idle-float', expression: 'blink', cue: null, particles: input.reducedMotion ? 'none' : 'bubbles' };
 }

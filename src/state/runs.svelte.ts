@@ -8,9 +8,7 @@ import { mapZibloo, type ZiblooPresentation } from '../core/zibloo/mapping.ts';
 import { getDb } from '../persistence/db.ts';
 import { ports } from './ports.svelte.ts';
 import { settings } from './settings.svelte.ts';
-import { t } from './i18n.svelte.ts';
 import { timer } from './timer.svelte.ts';
-import type { MessageKey } from '../i18n/messages.ts';
 
 const STORAGE_KEY = 'zibloo.runs.v1';
 
@@ -35,7 +33,6 @@ export const runs: {
 let loaded = false;
 let order = 1;
 let ticker: ReturnType<typeof setInterval> | null = null;
-let visibilityWired = false;
 let celebrateTimer: ReturnType<typeof setTimeout> | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -78,7 +75,6 @@ export function loadRuns(): void {
 		if (restored.length > 0) {
 			runs.now = Date.now();
 			ensureTicker();
-			syncTimerAlarms();
 		}
 	} catch {
 		runs.items = [];
@@ -89,18 +85,8 @@ function webVisible(): boolean {
 	return typeof document === 'undefined' || document.visibilityState === 'visible';
 }
 
-function wireVisibility(): void {
-	if (visibilityWired || typeof document === 'undefined') return;
-	visibilityWired = true;
-	ports.alarmPort.setWebVisible(document.visibilityState === 'visible');
-	document.addEventListener('visibilitychange', () => {
-		ports.alarmPort.setWebVisible(document.visibilityState === 'visible');
-	});
-}
-
 function ensureTicker(): void {
 	if (typeof window === 'undefined') return;
-	wireVisibility();
 	if (ticker) return;
 	runs.now = Date.now();
 	ticker = setInterval(() => {
@@ -115,56 +101,10 @@ function stopTickerIfIdle(): void {
 		clearInterval(ticker);
 		ticker = null;
 	}
-	ports.foregroundPort.hideTimer();
-	void ports.alarmPort.syncTimerAlarms([]);
 }
 
 function activeRuns(): Run[] {
 	return runs.items.filter((run) => run.session.endedAt === null);
-}
-
-function syncTimerAlarms(): void {
-	const voice = settings.voice;
-	const now = Date.now();
-	const alarms = activeRuns().flatMap((run) => {
-		const session = run.session;
-		if (session.pausedAt !== null) return [];
-		return engine.planSessionAlarms(session, now).map((alarm, index) => {
-			const cue = alarm.kind === 'complete' ? 'complete' : alarm.toPhase === 'work' ? 'work' : 'rest';
-			const bodyKey: MessageKey =
-				alarm.kind === 'complete' ? 'zibloo.notif.complete.body' : cue === 'work' ? 'notif.phase.work' : 'notif.phase.rest';
-			return {
-				id: `${session.id}:${index}`,
-				at: alarm.at,
-				title: t('app.name'),
-				body: t(bodyKey),
-				soundRes: `${voice}_${cue}`
-			};
-		});
-	});
-	void ports.alarmPort.syncTimerAlarms(alarms);
-	const running = activeRuns().filter((run) => run.session.pausedAt === null);
-	if (running.length === 0) {
-		ports.foregroundPort.hideTimer();
-		return;
-	}
-	const latest = running.reduce((a, b) => (a.startedOrder >= b.startedOrder ? a : b));
-	const kindTitle: MessageKey =
-		latest.session.kind === 'training'
-			? 'zibloo.notif.training.title'
-			: latest.session.kind === 'focus'
-				? 'zibloo.notif.focus.title'
-				: 'zibloo.notif.quick.title';
-	const kindBody: MessageKey =
-		latest.session.kind === 'training'
-			? 'zibloo.notif.training.body'
-			: latest.session.kind === 'focus'
-				? 'zibloo.notif.focus.body'
-				: 'zibloo.notif.quick.body';
-	ports.foregroundPort.showTimer(
-		t(kindTitle),
-		running.length === 1 ? t(kindBody) : t('board.runningMany', { n: running.length })
-	);
 }
 
 function cueFor(run: Run): void {
@@ -213,7 +153,6 @@ function finish(cardId: string, status: HistoryStatus): void {
 	runs.celebratingId = cardId;
 	if (webVisible()) ports.audioPort.play('complete');
 	persist();
-	syncTimerAlarms();
 	stopTickerIfIdle();
 	if (celebrateTimer) clearTimeout(celebrateTimer);
 	celebrateTimer = setTimeout(() => {
@@ -233,7 +172,6 @@ export function startCardRun(input: { cardId: string; kind: SessionKind; plan: T
 	runs.celebratingId = null;
 	ensureTicker();
 	cueFor(run);
-	syncTimerAlarms();
 	persist();
 }
 
@@ -242,7 +180,6 @@ export function pauseCard(cardId: string): void {
 	if (!run) return;
 	run.session = engine.pause(run.session, Date.now());
 	ports.audioPort.stopAll();
-	syncTimerAlarms();
 	persist();
 }
 
@@ -251,7 +188,6 @@ export function resumeCard(cardId: string): void {
 	if (!run) return;
 	run.session = engine.resume(run.session, Date.now());
 	run.lastFiredSegment = -1;
-	syncTimerAlarms();
 	cueFor(run);
 	persist();
 }
@@ -266,7 +202,6 @@ export function skipCard(cardId: string): void {
 		return;
 	}
 	run.lastFiredSegment = -1;
-	syncTimerAlarms();
 	cueFor(run);
 	persist();
 }
