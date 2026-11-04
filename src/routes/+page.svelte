@@ -301,7 +301,7 @@
 	{:else}
 		<div
 			class="zb-card"
-			class:timer={card.kind !== 'trend'}
+			class:timer
 			class:quick={card.kind === 'quick'}
 			class:clock={run !== null}
 			class:paused={run !== null && run.session.pausedAt !== null}
