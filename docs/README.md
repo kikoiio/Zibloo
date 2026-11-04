@@ -35,8 +35,8 @@
 | 中英、E/G/静音、备份导入导出 | 已不做 UI;默认中文与叫声仍生效 | `src/i18n/`、`src/state/settings.svelte.ts` |
 | 震动强度、语音播报 | 未实现 | 设置页无对应控件 |
 | Zibloo 五姿态帧映射 | 已实现 | `src/core/zibloo/mapping.ts`、单测 |
-| 产品验收 V1–V5 | 部分:实现与自动检查已接入 CI;本次工作流结果待回填;真机未验 | `docs/intent.md`;`scripts/smoke.mjs` |
-| 可靠性 1–4 | 部分:模拟器 CI 覆盖杀进程计时完成与重启后开看板;本次工作流结果待回填;真机未验 | `.github/workflows/android-emulator.yml`;[`runbooks/device-acceptance.md`](runbooks/device-acceptance.md) |
+| 产品验收 V1–V5 | 部分:类型检查、单元/属性测试、构建与 22 项网页冒烟通过;真实来源收取和真机未验 | [`CI 运行`](https://github.com/kikoiio/Zibloo/actions/runs/41771505462);`docs/intent.md`;`scripts/smoke.mjs` |
+| 可靠性 1–4 | 部分:模拟器杀进程后计时完成、重启后开看板通过;锁屏、多卡原生段边界和真机未验 | [`Android 模拟器运行`](https://github.com/kikoiio/Zibloo/actions/runs/41771505492);[`runbooks/device-acceptance.md`](runbooks/device-acceptance.md) |
 | 轻养成解锁 | 未实现(`overlay` 恒空) | `mapZibloo` |
 | 签名 APK / 发布页 / 图标定稿 | 未实现 | 无 Release,启动图标为 Capacitor 默认 |
 
