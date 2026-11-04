@@ -116,13 +116,19 @@ jobs:
           adb root > /dev/null
           adb wait-for-device
           sleep 2
-          pid=$(adb shell pidof io.zibloo.app | tr -d '\r\n ')
-          if [ -n "$pid" ]; then adb shell kill -9 "$pid"; fi
-          sleep 2
-          if adb shell pidof io.zibloo.app | grep -q .; then
-            echo "进程未被杀掉"; adb shell dumpsys activity processes | grep -A2 zibloo | head -10; exit 1
+          pid_before=$(adb shell pidof io.zibloo.app | tr -d '\r\n ')
+          if [ -z "$pid_before" ]; then echo "杀进程前未找到应用进程"; exit 1; fi
+          adb shell kill -9 "$pid_before"
+          killed=""
+          for i in $(seq 1 40); do
+            pid_after=$(adb shell pidof io.zibloo.app | tr -d '\r\n ')
+            if [ "$pid_after" != "$pid_before" ]; then killed=1; break; fi
+            sleep 0.5
+          done
+          if [ -z "$killed" ]; then
+            echo "原进程仍存活: $pid_before"; adb shell dumpsys activity processes | grep -A2 zibloo | head -10; exit 1
           fi
-          echo "进程已死,等待 1 分钟计时完成通知(最长 180s)…"
+          echo "旧进程已死(当前 PID: ${pid_after:-无});等待 1 分钟计时完成通知(最长 180s)…"
           for i in $(seq 1 60); do
             if adb shell dumpsys notification --noredact | grep -q "Zibloo 为你欢呼"; then
               echo "通过:杀进程后计时完成仍触发"
