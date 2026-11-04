@@ -149,7 +149,6 @@ jobs:
           exit 1
       - name: 'Phase B: 重启后看板能打开'
         run: |
-          adb shell cmd notification remove-all || true
           echo "重启设备,验证应用仍能打开看板…"
           adb reboot
           adb wait-for-device
@@ -162,14 +161,24 @@ jobs:
           if [ "$boot" != "1" ]; then echo "重启后未完成启动"; exit 1; fi
           adb shell am start -n io.zibloo.app/.MainActivity
           sleep 8
-          for attempt in 1 2 3; do
-            for s in $(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | sort -u); do
-              adb forward tcp:9222 localabstract:"$s" > /dev/null
-              if curl -s http://127.0.0.1:9222/json | grep -q localhost; then break 2; fi
+          forward_app_page() {
+            for attempt in $(seq 1 10); do
+              for s in $(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | sort -u); do
+                adb forward tcp:9222 localabstract:"$s" > /dev/null
+                if curl --max-time 2 -fsS http://127.0.0.1:9222/json | grep -q localhost; then return 0; fi
+              done
+              sleep 2
             done
-            sleep 3
+            return 1
+          }
+          smoke_ok=""
+          for attempt in 1 2 3; do
+            if ! forward_app_page; then echo "WebView 调试页尚未就绪,重试 $attempt/3"; continue; fi
+            if SMOKE_MODE=board node scripts/device-smoke.mjs; then smoke_ok=1; break; fi
+            echo "WebView 重启后连接中断,重试 $attempt/3…"
+            sleep 2
           done
-          SMOKE_MODE=board node scripts/device-smoke.mjs
+          [ -n "$smoke_ok" ] || { echo "重启后看板检查未通过"; exit 1; }
           adb exec-out screencap -p > artifacts-v3.png || true
           echo "通过:重启后看板能打开"
       - name: Save evidence

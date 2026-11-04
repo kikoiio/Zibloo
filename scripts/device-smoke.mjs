@@ -6,27 +6,69 @@
 // SMOKE_MODE=board 只确认看板已打开。
 const mode = process.env.SMOKE_MODE ?? 'timer';
 
-const list = await (await fetch('http://127.0.0.1:9222/json')).json();
-const target = list.find((t) => t.type === 'page' && t.url.includes('localhost'));
-if (!target) {
-	console.error('未找到应用页面 target:', list.map((t) => `${t.type} ${t.url}`).join(', '));
-	process.exit(1);
+async function connectToPage() {
+	const deadline = Date.now() + 30_000;
+	let lastError = '未找到应用页面 target';
+	while (Date.now() < deadline) {
+		let candidate;
+		try {
+			const response = await fetch('http://127.0.0.1:9222/json', { signal: AbortSignal.timeout(2_000) });
+			if (!response.ok) throw new Error('DevTools 返回 ' + response.status);
+			const list = await response.json();
+			const target = list.find((item) => item.type === 'page' && item.url.includes('localhost'));
+			if (!target) {
+				throw new Error('未找到应用页面 target: ' + list.map((item) => item.type + ' ' + item.url).join(', '));
+			}
+
+			candidate = new WebSocket(target.webSocketDebuggerUrl);
+			await new Promise((resolve, reject) => {
+				const timeout = setTimeout(() => reject(new Error('连接 DevTools WebSocket 超时')), 3_000);
+				candidate.addEventListener(
+					'open',
+					() => {
+						clearTimeout(timeout);
+						resolve();
+					},
+					{ once: true }
+				);
+				candidate.addEventListener(
+					'error',
+					() => {
+						clearTimeout(timeout);
+						reject(new Error('DevTools WebSocket 连接失败'));
+					},
+					{ once: true }
+				);
+			});
+			return { target, ws: candidate };
+		} catch (error) {
+			candidate?.close();
+			lastError = error instanceof Error ? error.message : String(error);
+			await new Promise((resolve) => setTimeout(resolve, 1_000));
+		}
+	}
+	throw new Error(lastError);
 }
 
-const ws = new WebSocket(target.webSocketDebuggerUrl);
-await new Promise((resolve, reject) => {
-	ws.addEventListener('open', resolve);
-	ws.addEventListener('error', reject);
-});
+let connection;
+try {
+	connection = await connectToPage();
+} catch (error) {
+	console.error('无法连接应用页面:', error instanceof Error ? error.message : String(error));
+	process.exit(1);
+}
+const { ws } = connection;
 
 function evaluate(expression) {
 	return new Promise((resolve, reject) => {
 		const id = 1;
+		const timeout = setTimeout(() => reject(new Error('Runtime.evaluate 超时')), 30_000);
 		ws.addEventListener(
 			'message',
 			(event) => {
 				const msg = JSON.parse(String(event.data));
 				if (msg.id === id) {
+					clearTimeout(timeout);
 					if (msg.error) reject(new Error(msg.error.message));
 					else resolve(msg.result);
 				}
