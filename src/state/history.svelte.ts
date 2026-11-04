@@ -21,9 +21,9 @@ export async function loadHistory(): Promise<void> {
 }
 
 export async function exportBackupData(): Promise<BackupData> {
-	const { history: h, reminders } = await exportAll();
+	const { history: h } = await exportAll();
 	const { trainingPresets } = await import('./presets.svelte.ts');
-	return { history: h, reminders, presets: trainingPresets.list };
+	return { history: h, presets: trainingPresets.list };
 }
 
 export async function restoreFromBackup(data: BackupData): Promise<void> {

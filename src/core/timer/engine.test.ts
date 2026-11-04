@@ -204,12 +204,20 @@ describe('activeMs / totalMs', () => {
 describe('planSessionAlarms', () => {
 	it('每段尾一个,末段为 complete', () => {
 		const s = startSession({ id: 's15', kind: 'focus', plan: plans.focus, now: T0 });
-		const alarms = planSessionAlarms(s);
+		const alarms = planSessionAlarms(s, T0);
 		expect(alarms).toHaveLength(8);
 		expect(alarms.at(-1)).toMatchObject({ kind: 'complete', at: s.segments.at(-1)!.endAt });
 		expect(alarms[0]).toMatchObject({ kind: 'phase', toPhase: 'rest', at: s.segments[0].endAt });
 		const ended = endSession(s, T0 + 1);
-		expect(planSessionAlarms(ended)).toHaveLength(0);
+		expect(planSessionAlarms(ended, T0 + 1)).toHaveLength(0);
+	});
+
+	it('只安排还没到时的段边界', () => {
+		const s = startSession({ id: 's16', kind: 'focus', plan: plans.focus, now: T0 });
+		const firstEnd = s.segments[0].endAt;
+		const alarms = planSessionAlarms(s, firstEnd);
+		expect(alarms).toHaveLength(s.segments.length - 1);
+		expect(alarms.every((alarm) => alarm.at > firstEnd)).toBe(true);
 	});
 });
 

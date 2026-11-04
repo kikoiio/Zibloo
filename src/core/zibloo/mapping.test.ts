@@ -8,19 +8,13 @@ function view(phase: PhaseView['phase'], remainMs = 30_000): PhaseView {
 	return { phase, round: 2, rounds: 4, remainMs, segmentIndex: 1, next: null };
 }
 
-const idle = { activity: 'none' as const, view: null, paused: false, celebrating: false, reminding: false, greeted: false, reducedMotion: false };
+const idle = { activity: 'none' as const, view: null, paused: false, celebrating: false, greeted: false, reducedMotion: false };
 
 describe('mapZibloo:状态表', () => {
 	it('待机:漂浮、眨眼、气泡', () => {
 		const p = mapZibloo(idle);
 		expect(p).toMatchObject({ pose: 'idle-float', expression: 'blink', particles: 'bubbles', cue: null, motion: 'full' });
 		expect(p.notification).toBeNull();
-	});
-
-	it('提醒召唤优先级最高:跳出 + 提醒声 + 气泡', () => {
-		const p = mapZibloo({ ...idle, activity: 'training', view: view('work'), reminding: true });
-		expect(p).toMatchObject({ pose: 'summon-pop', expression: 'sparkle', cue: 'reminder', particles: 'bubbles' });
-		expect(p.notification).toMatchObject({ titleKey: 'zibloo.notif.reminder.title' });
 	});
 
 	it('庆祝:欢快动作 + 完成三连', () => {

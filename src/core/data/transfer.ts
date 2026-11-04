@@ -1,7 +1,6 @@
 // core/data/transfer.ts — 备份/预设文件的版本化信封(纯函数)。
 // 导入是用户数据的破坏性操作:解析与校验必须在这里完成,UI 只做确认与落地。
 import type { HistoryEntry } from '../history/history.ts';
-import type { Reminder } from '../reminders/rule.ts';
 import type { TrainingPreset } from '../timer/presets.ts';
 
 export const BACKUP_KIND = 'zibloo-backup';
@@ -9,7 +8,6 @@ export const BACKUP_VERSION = 1;
 
 export type BackupData = {
 	history: HistoryEntry[];
-	reminders: Reminder[];
 	presets: TrainingPreset[];
 };
 
@@ -46,7 +44,7 @@ export function parseBackup(raw: string): BackupParseResult {
 	const data = file.data;
 	if (typeof data !== 'object' || data === null) return { ok: false, error: 'bad-shape' };
 	const d = data as Record<string, unknown>;
-	if (!isArray(d.history) || !isArray(d.reminders) || !isArray(d.presets)) {
+	if (!isArray(d.history) || !isArray(d.presets)) {
 		return { ok: false, error: 'bad-shape' };
 	}
 	return {
@@ -57,7 +55,6 @@ export function parseBackup(raw: string): BackupParseResult {
 			exportedAt: typeof file.exportedAt === 'number' ? file.exportedAt : 0,
 			data: {
 				history: d.history as HistoryEntry[],
-				reminders: d.reminders as Reminder[],
 				presets: d.presets as TrainingPreset[]
 			}
 		}

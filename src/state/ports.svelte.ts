@@ -7,7 +7,7 @@ export const ports = createPorts({
 	getVoice: () => settings.voice,
 	getMuted: () => settings.muted,
 	getReminderTitle: (label) => label.trim() || t('app.name'),
-	getReminderBody: () => t('zibloo.notif.reminder.body')
+	getReminderBody: () => t('app.name')
 });
 
 // 首次用户手势解锁音频(自动播放策略)

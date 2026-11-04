@@ -175,13 +175,19 @@ export function totalMs(s: Session): number {
 	return expandSegments(s.plan).reduce((acc, d) => acc + d.sec * 1000, 0);
 }
 
-/** 段边界兜底闹钟:每个段尾一个;末段边界即完成。暂停/恢复后须重算。 */
-export function planSessionAlarms(s: Session): AlarmSpec[] {
+/** 段边界兜底闹钟:只保留未来段尾;末段边界即完成。暂停/恢复后须重算。 */
+export function planSessionAlarms(s: Session, now: number): AlarmSpec[] {
 	if (s.endedAt !== null) return [];
-	return s.segments.map((seg, i) => ({
-		sessionId: s.id,
-		at: seg.endAt,
-		kind: i === s.segments.length - 1 ? 'complete' : 'phase',
-		toPhase: s.segments[i + 1]?.phase ?? 'work'
-	}));
+	return s.segments.flatMap((seg, i) =>
+		seg.endAt > now
+			? [
+					{
+						sessionId: s.id,
+						at: seg.endAt,
+						kind: i === s.segments.length - 1 ? 'complete' : 'phase',
+						toPhase: s.segments[i + 1]?.phase ?? 'work'
+					}
+				]
+			: []
+	);
 }

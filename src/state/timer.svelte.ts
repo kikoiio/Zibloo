@@ -20,8 +20,6 @@ export const timer: {
 	greeted: boolean;
 	greetUntil: number;
 	completedAt: number | null;
-	/** 提醒召唤:到点后短暂置真,主页据此呈现召唤态 */
-	reminding: boolean;
 } = $state({
 	session: null,
 	now: 0,
@@ -29,8 +27,7 @@ export const timer: {
 	celebrating: false,
 	greeted: false,
 	greetUntil: 0,
-	completedAt: null,
-	reminding: false
+	completedAt: null
 });
 
 let ticker: ReturnType<typeof setInterval> | null = null;
@@ -50,7 +47,6 @@ export function currentPresentation(): ZiblooPresentation {
 		view: currentView(),
 		paused: timer.session !== null && timer.session.pausedAt !== null,
 		celebrating: timer.celebrating,
-		reminding: timer.reminding,
 		greeted: timer.greeted,
 		reducedMotion: settings.reducedMotion
 	});
@@ -92,7 +88,7 @@ function syncTimerAlarms(): void {
 	}
 	const voice = settings.voice;
 	void ports.alarmPort.syncTimerAlarms(
-		planSessionAlarms(s).map((a, i) => {
+		planSessionAlarms(s, Date.now()).map((a, i) => {
 			const cue = a.kind === 'complete' ? 'complete' : a.toPhase === 'work' ? 'work' : 'rest';
 			const bodyKey: MessageKey =
 				a.kind === 'complete' ? 'zibloo.notif.complete.body' : cue === 'work' ? 'notif.phase.work' : 'notif.phase.rest';
@@ -238,13 +234,4 @@ export function greet(): void {
 	setTimeout(() => {
 		if (Date.now() >= timer.greetUntil) timer.greeted = false;
 	}, 1_500);
-}
-
-/** 提醒到点召唤:跳出来叫你 */
-export function flashReminder(): void {
-	timer.reminding = true;
-	ports.audioPort.play('reminder');
-	setTimeout(() => {
-		timer.reminding = false;
-	}, 8_000);
 }

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeBackup, parseBackup, BACKUP_KIND, BACKUP_VERSION } from './transfer.ts';
 import type { HistoryEntry, HistoryStatus } from '../history/history.ts';
-import type { Reminder } from '../reminders/rule.ts';
 import type { TrainingPreset } from '../timer/presets.ts';
 import type { TrainingPlan } from '../timer/types.ts';
 
@@ -20,19 +19,16 @@ const history: HistoryEntry[] = [
 	}
 ];
 
-const reminders: Reminder[] = [{ id: 'r1', label: '喝水', enabled: true, rule: { kind: 'daily', at: { hour: 9, minute: 0 } } }];
-
 const presets: TrainingPreset[] = [{ id: 'p1', name: '我的计划', plan, createdAt: 1 }];
 
 describe('备份信封', () => {
 	it('make → parse 往返一致', () => {
-		const file = makeBackup({ history, reminders, presets });
+		const file = makeBackup({ history, presets });
 		const raw = JSON.stringify(file);
 		const result = parseBackup(raw);
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.backup.data.history).toEqual(history);
-			expect(result.backup.data.reminders).toEqual(reminders);
 			expect(result.backup.data.presets).toEqual(presets);
 			expect(result.backup.version).toBe(BACKUP_VERSION);
 		}
@@ -50,5 +46,13 @@ describe('备份信封', () => {
 			ok: false,
 			error: 'bad-shape'
 		});
+		const old = makeBackup({ history, presets });
+		const withReminders = JSON.stringify({
+			...old,
+			data: { history, presets, reminders: [{ id: 'r1' }] }
+		});
+		const accepted = parseBackup(withReminders);
+		expect(accepted.ok).toBe(true);
+		if (accepted.ok) expect(accepted.backup.data.presets).toEqual(presets);
 	});
 });

@@ -12,8 +12,6 @@ export type MapZiblooInput = {
 	paused: boolean;
 	/** 完成庆祝瞬间(到点/完成反馈) */
 	celebrating: boolean;
-	/** 提醒召唤(提醒到点) */
-	reminding: boolean;
 	/** 用户点按角色打招呼 */
 	greeted: boolean;
 	reducedMotion: boolean;
@@ -47,17 +45,7 @@ export type ZiblooPresentation = {
 export function mapZibloo(input: MapZiblooInput): ZiblooPresentation {
 	const base = { overlay: [] as string[], motion: (input.reducedMotion ? 'static' : 'full') as MotionPreset };
 
-	// 优先级:召唤 > 庆祝 > 打招呼 > 运行中 > 待机
-	if (input.reminding) {
-		return {
-			...base,
-			pose: 'summon-pop',
-			expression: 'sparkle',
-			cue: 'reminder',
-			particles: 'bubbles',
-			notification: { titleKey: 'zibloo.notif.reminder.title', bodyKey: 'zibloo.notif.reminder.body' }
-		};
-	}
+	// 优先级:庆祝 > 打招呼 > 运行中 > 待机
 	if (input.celebrating) {
 		return {
 			...base,

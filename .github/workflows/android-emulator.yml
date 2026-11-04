@@ -106,12 +106,12 @@ jobs:
             return 1
           }
           forward_app_page || { echo "未找到可用的 WebView 页面 target"; adb logcat -d | tail -50; exit 1; }
-      - name: 'Phase A: 杀进程后提醒仍触发 (V2-lite)'
+      - name: 'Phase A: 杀进程后计时完成仍触发'
         run: |
-          REMINDER_LABEL='冒烟A' REMINDER_MINUTES=1 node scripts/device-smoke.mjs
+          SMOKE_MODE=timer node scripts/device-smoke.mjs
           adb shell input keyevent KEYCODE_HOME
           sleep 2
-          # am kill 会把包置为 stopped 态,广播被系统丢弃;V2 是"进程被杀"而非"停止应用",
+          # am kill 会把包置为 stopped 态,广播被系统丢弃;这里要的是"进程被杀"而非"停止应用",
           # 用 root SIGKILL 模拟系统回收/崩溃死亡(不进 stopped 态)
           adb root > /dev/null
           adb wait-for-device
@@ -122,16 +122,16 @@ jobs:
           if adb shell pidof io.zibloo.app | grep -q .; then
             echo "进程未被杀掉"; adb shell dumpsys activity processes | grep -A2 zibloo | head -10; exit 1
           fi
-          echo "进程已死,等待闹钟触发(最长 180s)…"
+          echo "进程已死,等待 1 分钟计时完成通知(最长 180s)…"
           for i in $(seq 1 60); do
-            if adb shell dumpsys notification --noredact | grep -q "冒烟A"; then
-              echo "V2-lite 通过:杀进程后提醒照响"
+            if adb shell dumpsys notification --noredact | grep -q "Zibloo 为你欢呼"; then
+              echo "通过:杀进程后计时完成仍触发"
               adb exec-out screencap -p > artifacts-v2.png || true
               exit 0
             fi
             sleep 3
           done
-          echo "V2-lite 失败:通知未出现"
+          echo "失败:计时完成通知未出现"
           echo "--- 包状态(stopped/flags) ---"
           adb shell dumpsys package io.zibloo.app | grep -iE "stopped|flags=\[" | head -4 || true
           echo "--- 闹钟 ---"
@@ -141,25 +141,10 @@ jobs:
           echo "--- 通知快照 ---"
           adb shell dumpsys notification --noredact | grep -B2 -A6 zibloo | head -30 || true
           exit 1
-      - name: 'Phase B: 重启后从镜像重建 (V3-lite)'
+      - name: 'Phase B: 重启后看板能打开'
         run: |
           adb shell cmd notification remove-all || true
-          adb shell am start -n io.zibloo.app/.MainActivity
-          sleep 8
-          for attempt in 1 2 3; do
-            for s in $(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | sort -u); do
-              adb forward tcp:9222 localabstract:"$s" > /dev/null
-              if curl -s http://127.0.0.1:9222/json | grep -q localhost; then break 2; fi
-            done
-            sleep 3
-          done
-          REMINDER_LABEL='冒烟B' REMINDER_MINUTES=2 node scripts/device-smoke.mjs
-          adb shell input keyevent KEYCODE_HOME
-          sleep 2
-          pid=$(adb shell pidof io.zibloo.app | tr -d '\r\n ')
-          if [ -n "$pid" ]; then adb shell kill -9 "$pid"; fi
-          sleep 2
-          echo "重启设备,验证 BootReceiver 重建…"
+          echo "重启设备,验证应用仍能打开看板…"
           adb reboot
           adb wait-for-device
           boot=""
@@ -169,18 +154,18 @@ jobs:
             sleep 5
           done
           if [ "$boot" != "1" ]; then echo "重启后未完成启动"; exit 1; fi
-          echo "重启完成,等待重建的闹钟触发(最长 180s)…"
-          for i in $(seq 1 60); do
-            if adb shell dumpsys notification --noredact | grep -q "冒烟B"; then
-              echo "V3-lite 通过:重启后提醒从镜像重建并触发"
-              adb exec-out screencap -p > artifacts-v3.png || true
-              exit 0
-            fi
+          adb shell am start -n io.zibloo.app/.MainActivity
+          sleep 8
+          for attempt in 1 2 3; do
+            for s in $(adb shell cat /proc/net/unix | grep -o 'webview_devtools_remote_[0-9]*' | sort -u); do
+              adb forward tcp:9222 localabstract:"$s" > /dev/null
+              if curl -s http://127.0.0.1:9222/json | grep -q localhost; then break 2; fi
+            done
             sleep 3
           done
-          echo "V3-lite 失败"
-          adb shell dumpsys alarm | grep -B2 -A5 zibloo || true
-          exit 1
+          SMOKE_MODE=board node scripts/device-smoke.mjs
+          adb exec-out screencap -p > artifacts-v3.png || true
+          echo "通过:重启后看板能打开"
       - name: Save evidence
         if: always()
         uses: actions/upload-artifact@v7

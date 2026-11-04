@@ -1,5 +1,5 @@
 // scripts/smoke.mjs — 网页版冒烟验收:构建产物上跑 Chromium,
-// 覆盖主页入口、快捷计时全流程、提醒 CRUD、语言切换与声音资产。
+// 覆盖看板入口、快捷计时全流程、看板训练跳段与声音资产。
 // CI 里运行;本机也可 npm run smoke。
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -94,13 +94,17 @@ try {
 	page.on('pageerror', (e) => errors.push(String(e)));
 
 	await page.goto(BASE, { waitUntil: 'load' });
-	await page.waitForSelector('img.lockup', { timeout: 10_000 });
+	await page.waitForSelector('.zb-app', { timeout: 10_000 });
 
-	// 主页:字标、问候、三模式入口(ssr=false 纯客户端挂载,必须等元素而非数网络)
-	check('主页加载', (await page.locator('img.lockup').count()) === 1);
-	for (const name of ['训练', '专注', '记事']) {
-		check(`入口可见:${name}`, await page.locator('.entry', { hasText: name }).first().isVisible());
-	}
+	// 主页是一块按来源分组的看板:热点 + 计时卡片,无侧栏/日报/独立训练页
+	check('主页加载', (await page.locator('.zb-app').count()) === 1);
+	check('无侧栏', (await page.locator('.zb-side, .zb-nav').count()) === 0);
+	check('计时块', await page.locator('.zb-source', { hasText: '计时' }).first().isVisible());
+	check('快捷计时卡片', await page.locator('.zb-card.quick', { hasText: '1 分钟' }).first().isVisible());
+	check('无训练页', (await page.locator('a[href="/training"]').count()) === 0);
+	check('无专注页', (await page.locator('a[href="/focus"]').count()) === 0);
+	check('无历史页', (await page.locator('a[href="/history"]').count()) === 0);
+	check('无设置页', (await page.locator('a[href="/settings"]').count()) === 0);
 	// 吉祥物姿态帧已加载
 	const frameLoaded = await page.evaluate(async () => {
 		const img = new Image();
@@ -116,89 +120,60 @@ try {
 	check('声音资产可加载', soundOk);
 	await page.screenshot({ path: `${ART}/smoke-home.png`, fullPage: true });
 
-	// 快捷计时 1 分钟 → 运行页
+	// 快捷计时 1 分钟留在看板上
 	await page.locator('.quick .btn', { hasText: '1 分钟' }).click();
-	await page.waitForURL('**/run');
-	await page.waitForSelector('.remain');
-	const remain1 = await page.locator('.remain').textContent();
-	check('运行页倒计时出现', /^(00:5\d|00:60|01:00)$/.test((remain1 ?? '').trim()), `remain=${remain1}`);
-	check('运行页阶段标签', await page.locator('.phase').first().isVisible());
+	await page.waitForSelector('.zb-run .remain');
+	const remain1 = await page.locator('.zb-run .remain').textContent();
+	check('看板倒计时出现', /^(00:5\d|00:60|01:00)$/.test((remain1 ?? '').trim()), `remain=${remain1}`);
+	check('看板阶段标签', await page.locator('.zb-run .phase').first().isVisible());
 	await page.screenshot({ path: `${ART}/smoke-run.png` });
 
 	// 暂停/继续
-	await page.locator('.btn', { hasText: '暂停' }).click();
-	await page.waitForSelector('.clock.paused');
-	const remainPaused = await page.locator('.remain').textContent();
+	await page.locator('.zb-run .btn', { hasText: '暂停' }).click();
+	await page.waitForSelector('.zb-run.paused');
+	const remainPaused = await page.locator('.zb-run .remain').textContent();
 	await sleep(1300);
-	const remainStill = await page.locator('.remain').textContent();
+	const remainStill = await page.locator('.zb-run .remain').textContent();
 	check('暂停后倒计时冻结', remainPaused === remainStill, `${remainPaused} vs ${remainStill}`);
-	await page.locator('.btn', { hasText: '继续' }).click();
-	await page.waitForSelector('.clock:not(.paused)');
+	await page.locator('.zb-run .btn', { hasText: '继续' }).click();
+	await page.waitForSelector('.zb-run:not(.paused)');
 	check('继续后恢复', true);
 
-	// 结束 → 回主页(快捷计时单段,跳段即结束,跳段语义在下面训练流程验证)
-	await page.locator('.btn', { hasText: '结束' }).click();
-	await page.waitForURL(BASE + '/', { timeout: 8000 });
-	check('结束回主页', true);
+	await page.locator('.zb-run .btn', { hasText: '结束' }).click();
+	await page.waitForSelector('.zb-run', { state: 'detached' });
+	check('结束留在看板', page.url().replace(/\/$/, '') === BASE.replace(/\/$/, ''));
 
-	// 训练:自定义 5s/5s×2 组,验证跳段进入休息;顺带验证预设保存/加载
-	await page.locator('.entry', { hasText: '训练' }).click();
-	await page.waitForSelector('.steppers');
-	const nums = page.locator('.steppers input[type="number"]');
-	await nums.nth(0).fill('0');
-	await nums.nth(1).fill('5');
-	await nums.nth(2).fill('5');
-	await nums.nth(3).fill('2');
-	await page.fill('.save-row input', '冒烟预设');
-	await page.locator('.save-row .btn').click();
-	await page.waitForSelector('.preset .load:has-text("冒烟预设")');
-	check('预设保存成功', true);
-	await nums.nth(1).fill('9');
-	await page.locator('.preset .load', { hasText: '冒烟预设' }).click();
-	check(
-		'预设加载恢复参数',
-		(await nums.nth(1).inputValue()) === '5'
-	);
-	await page.locator('.preset .drop').first().click();
-	await page.waitForSelector('.preset', { state: 'detached' });
-	check('预设删除成功', true);
-	await nums.nth(0).fill('0');
-	await nums.nth(1).fill('5');
-	await nums.nth(2).fill('5');
-	await nums.nth(3).fill('2');
-	await page.locator('.btn.start').click();
-	await page.waitForURL('**/run');
+	// 看板训练模板:跳过准备进入运动,再跳进休息
+	await page.locator('.zb-card', { hasText: '经典 30/15' }).locator('.btn', { hasText: '开始' }).click();
+	await page.waitForSelector('.zb-run .phase');
+	await page.locator('.zb-run .btn', { hasText: '跳过本段' }).click();
 	await page.waitForSelector('.phase:has-text("运动")', { timeout: 3000 });
-	check('训练开始进入运动', true);
-	await page.locator('.btn', { hasText: '跳过本段' }).click();
+	check('训练在看板上进入运动', true);
+	await page.locator('.zb-run .btn', { hasText: '跳过本段' }).click();
 	await page.waitForSelector('.phase:has-text("休息")', { timeout: 3000 });
 	check('跳段后进入休息', true);
-	await page.locator('.btn', { hasText: '结束' }).click();
-	await page.waitForURL(BASE + '/', { timeout: 8000 });
-	check('训练结束回主页', true);
+	await page.locator('.zb-run .btn', { hasText: '结束' }).click();
+	await page.waitForSelector('.phase:has-text("休息")', { state: 'detached' });
+	check('训练结束留在看板', true);
 
-	// 提醒页:新增一条每日提醒(用 30 秒后的一次性提醒验证 unschedulable 之外的排期路径)
-	await page.locator('.entry', { hasText: '记事' }).click();
-	await page.waitForSelector('.form');
-	await page.fill('input[type="text"]', '冒烟测试提醒');
-	await page.locator('.chip', { hasText: '一次性' }).click();
-	await page.fill('input[type="number"]', '30');
-	await page.locator('.btn.add').click();
-	await page.waitForSelector('.row:has-text("冒烟测试提醒")');
-	check('提醒新增成功', true);
-	await page.screenshot({ path: `${ART}/smoke-reminders.png` });
-	await page.locator('.row .del').first().click();
-	await page.waitForSelector('.row:has-text("冒烟测试提醒")', { state: 'detached' });
-	check('提醒删除成功', true);
-
-	// 英文界面
-	await page.goto(`${BASE}/settings`, { waitUntil: 'load' });
-	await page.waitForSelector('.chip', { timeout: 10_000 });
-	await page.locator('.chip', { hasText: 'English' }).click();
-	await page.goto(BASE, { waitUntil: 'load' });
-	await page.waitForSelector('.entry', { timeout: 10_000 });
-	check('英文界面切换', await page.locator('.entry', { hasText: 'Training' }).first().isVisible());
-	await page.screenshot({ path: `${ART}/smoke-home-en.png` });
+	// 两张计时可以并行,单独暂停一张不影响另一张
+	const quickCard = page.locator('.zb-card.quick', { hasText: '1 分钟' });
+	const trainingCard = page.locator('.zb-card', { hasText: '经典 30/15' });
+	await quickCard.locator('.btn', { hasText: '1 分钟' }).click();
+	await trainingCard.locator('.btn', { hasText: '开始' }).click();
+	await page.waitForFunction(() => document.querySelectorAll('.zb-run').length === 2);
+	check('两张计时同时运行', (await page.locator('.zb-run').count()) === 2);
+	await quickCard.locator('.btn', { hasText: '暂停' }).click();
+	await page.waitForSelector('.zb-card.quick.zb-run.paused');
+	const trainingRemainBefore = await trainingCard.locator('.remain').textContent();
+	await sleep(1300);
+	const trainingRemainAfter = await trainingCard.locator('.remain').textContent();
+	check('暂停一张时另一张继续走', trainingRemainBefore !== trainingRemainAfter);
+	await quickCard.locator('.btn', { hasText: '继续' }).click();
+	await trainingCard.locator('.btn', { hasText: '结束' }).click();
+	await quickCard.locator('.btn', { hasText: '结束' }).click();
+	await page.waitForFunction(() => document.querySelectorAll('.zb-run').length === 0);
+	check('多卡均可独立结束', (await page.locator('.zb-run').count()) === 0);
 
 	check('页面运行错误为零', errors.length === 0, errors.join('; '));
 

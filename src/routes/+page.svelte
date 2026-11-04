@@ -1,158 +1,361 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { t } from '../state/i18n.svelte.ts';
+	import { onMount } from 'svelte';
+	import {
+		compact,
+		PLATFORM_LABEL,
+		PLATFORM_SCORE,
+		PLATFORMS,
+		type Platform,
+		type TrendRecord
+	} from '../core/trending/hit.ts';
+	import * as engine from '../core/timer/engine.ts';
+	import type { Phase, PomodoroPlan, QuickPlan, TrainingPlan } from '../core/timer/types.ts';
 	import type { MessageKey } from '../i18n/messages.ts';
-	import { timer, startSession, greet, currentPresentation } from '../state/timer.svelte.ts';
+	import { loadBoard, collectTrends, board } from '../state/board.svelte.ts';
+	import { t } from '../state/i18n.svelte.ts';
+	import { loadPresets, trainingPresets } from '../state/presets.svelte.ts';
+	import { boardPresentation, endCard, loadRuns, pauseCard, resumeCard, runFor, runs, skipCard, startCardRun } from '../state/runs.svelte.ts';
+	import { greet } from '../state/timer.svelte.ts';
 	import ZiblooPresenter from '../zibloo/ZiblooPresenter.svelte';
+	import TrendDrawer from './TrendDrawer.svelte';
+	import './board.css';
 
-	const hour = new Date().getHours();
-	const greetingKey: MessageKey = hour < 11 ? 'greeting.morning' : hour < 18 ? 'greeting.afternoon' : 'greeting.evening';
+	type TrendCard = {
+		kind: 'trend';
+		id: string;
+		title: string;
+		detail: string;
+		href: string;
+		platform: Platform;
+		language: string | null;
+	};
+	type TimerCard =
+		| { kind: 'training'; id: string; title: string; detail: string; plan: TrainingPlan }
+		| { kind: 'focus'; id: string; title: string; detail: string; plan: PomodoroPlan }
+		| { kind: 'quick'; id: string; title: string; detail: string; plan: QuickPlan };
+	type Card = TrendCard | TimerCard;
 
-	const QUICK = [1, 3, 5, 10];
+	const TEMPLATES: { id: string; label: MessageKey; plan: TrainingPlan }[] = [
+		{ id: 'training:classic', label: 'training.template.classic', plan: { kind: 'training', prepareSec: 10, workSec: 30, restSec: 15, rounds: 8 } },
+		{ id: 'training:tabata', label: 'training.template.tabata', plan: { kind: 'training', prepareSec: 10, workSec: 20, restSec: 10, rounds: 8 } },
+		{ id: 'training:strength', label: 'training.template.strength', plan: { kind: 'training', prepareSec: 10, workSec: 40, restSec: 20, rounds: 6 } },
+		{ id: 'training:endurance', label: 'training.template.endurance', plan: { kind: 'training', prepareSec: 10, workSec: 60, restSec: 30, rounds: 4 } }
+	];
+	const FOCUS_MIN = [15, 20, 25, 50];
+	const QUICK_MIN = [1, 3, 5, 10];
 
-	function startQuick(minutes: number): void {
-		startSession('quick', { kind: 'quick', durationSec: minutes * 60 });
-		goto('/run');
+	let query = $state('');
+	let openId = $state<string | null>(null);
+	let helpOpen = $state(false);
+	const today = new Date().toISOString().slice(0, 10);
+
+	onMount(() => {
+		loadBoard();
+		loadRuns();
+		loadPresets();
+		function onKey(event: KeyboardEvent): void {
+			const tag = (event.target as HTMLElement | null)?.tagName;
+			const typing = tag === 'INPUT' || tag === 'TEXTAREA';
+			if (event.key === 'Escape') {
+				openId = null;
+				helpOpen = false;
+				return;
+			}
+			if (event.key === '/' && !typing) {
+				event.preventDefault();
+				document.querySelector<HTMLInputElement>('.zb-search input')?.focus();
+				return;
+			}
+			if (event.key === '?' && !typing) {
+				event.preventDefault();
+				helpOpen = !helpOpen;
+				return;
+			}
+			if (typing) return;
+			if (event.key === 'c') void collectTrends();
+		}
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	});
+
+	const presentation = $derived(boardPresentation());
+
+	function focusPlan(minutes: number): PomodoroPlan {
+		return { kind: 'focus', focusSec: minutes * 60, shortRestSec: 5 * 60, longRestSec: 15 * 60, longRestEvery: 4, rounds: 4 };
 	}
 
-	const presentation = $derived(currentPresentation());
+	function quickPlan(minutes: number): QuickPlan {
+		return { kind: 'quick', durationSec: minutes * 60 };
+	}
+
+	function matches(title: string, detail: string, extra = ''): boolean {
+		const q = query.trim().toLowerCase();
+		if (!q) return true;
+		return `${title} ${detail} ${extra}`.toLowerCase().includes(q);
+	}
+
+	const timerCards = $derived.by(() => {
+		const list: TimerCard[] = [];
+		for (const template of TEMPLATES) {
+			const title = t(template.label);
+			const detail = `${template.plan.workSec}/${template.plan.restSec} × ${template.plan.rounds}`;
+			if (matches(title, detail)) list.push({ kind: 'training', id: template.id, title, detail, plan: template.plan });
+		}
+		for (const preset of trainingPresets.list) {
+			const detail = `${preset.plan.workSec}/${preset.plan.restSec} × ${preset.plan.rounds}`;
+			if (matches(preset.name, detail)) list.push({ kind: 'training', id: `preset:${preset.id}`, title: preset.name, detail, plan: preset.plan });
+		}
+		for (const minutes of FOCUS_MIN) {
+			const title = `${t('mode.focus.name')} ${minutes}`;
+			if (matches(title, '')) list.push({ kind: 'focus', id: `focus:${minutes}`, title, detail: t('mode.focus.desc'), plan: focusPlan(minutes) });
+		}
+		for (const minutes of QUICK_MIN) {
+			const title = t('quick.minutes', { n: minutes });
+			if (matches(title, '')) list.push({ kind: 'quick', id: `quick:${minutes}`, title, detail: t('quick.title'), plan: quickPlan(minutes) });
+		}
+		for (const pinned of board.pinned) {
+			if (!matches(pinned.label, '')) continue;
+			if (pinned.plan.kind === 'training') {
+				list.push({
+					kind: 'training',
+					id: pinned.id,
+					title: pinned.label,
+					detail: `${pinned.plan.workSec}/${pinned.plan.restSec} × ${pinned.plan.rounds}`,
+					plan: pinned.plan
+				});
+			} else if (pinned.plan.kind === 'focus') {
+				list.push({ kind: 'focus', id: pinned.id, title: pinned.label, detail: t('mode.focus.desc'), plan: pinned.plan });
+			} else {
+				list.push({ kind: 'quick', id: pinned.id, title: pinned.label, detail: t('quick.title'), plan: pinned.plan });
+			}
+		}
+		return [...list].sort((a, b) => Number(Boolean(runFor(b.id))) - Number(Boolean(runFor(a.id))));
+	});
+
+	const sourceGroups = $derived.by(() => {
+		const groups: { platform: Platform; cards: TrendCard[] }[] = [];
+		for (const platform of PLATFORMS) {
+			const cards: TrendCard[] = [];
+			for (const trend of board.trends) {
+				if (trend.platform !== platform) continue;
+				const extra = `${PLATFORM_LABEL[trend.platform]} ${trend.note} ${trend.language ?? ''}`;
+				if (!matches(trend.name, trend.description, extra)) continue;
+				cards.push({
+					kind: 'trend',
+					id: trend.id,
+					title: trend.name,
+					detail: trend.description,
+					href: trend.url,
+					platform: trend.platform,
+					language: trend.language
+				});
+			}
+			if (cards.length > 0) groups.push({ platform, cards });
+		}
+		return groups;
+	});
+
+	const trendById = $derived(new Map(board.trends.map((item: TrendRecord) => [item.id, item])));
+	const openItem = $derived(openId ? (trendById.get(openId) ?? null) : null);
+
+	function phaseKey(phase: Phase): MessageKey {
+		switch (phase) {
+			case 'work':
+				return 'phase.work';
+			case 'rest':
+				return 'phase.rest';
+			case 'long-rest':
+				return 'phase.long-rest';
+			case 'prepare':
+				return 'phase.prepare';
+			default: {
+				const neverPhase: never = phase;
+				return neverPhase;
+			}
+		}
+	}
+
+	function formatRemain(ms: number): string {
+		const total = Math.max(0, Math.ceil(ms / 1000));
+		const minutes = Math.floor(total / 60);
+		const seconds = total % 60;
+		return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+	}
+
+	function start(card: Card): void {
+		if (card.kind === 'trend') return;
+		startCardRun({ cardId: card.id, kind: card.kind, plan: card.plan });
+	}
+
+	function formatCollectAt(at: number | null): string {
+		if (at === null) return t('board.neverCollect');
+		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(at);
+	}
+
+	function openTrend(card: Card): void {
+		if (card.kind === 'trend') openId = card.id;
+	}
 </script>
 
-<main class="home">
-	<img class="lockup" src="/zibloo/zibloo-lockup.svg" alt="zibloo" />
-	<p class="greeting">{t(greetingKey)}</p>
+<div class="zb-app">
+	<header class="zb-top">
+		<ZiblooPresenter presentation={presentation} onclick={greet} size="companion" />
+		<strong class="zb-name">Zibloo</strong>
+		<label class="zb-search">
+			<input type="search" bind:value={query} placeholder={t('board.search')} aria-label={t('board.search')} />
+		</label>
+		<span class="zb-meta">
+			{#if runs.items.length > 0}<span class="zb-running">{t('board.runningMany', { n: runs.items.length })}</span>{/if}
+			<span>{board.lastCollectAt === null ? formatCollectAt(null) : t('board.lastCollectAt', { time: formatCollectAt(board.lastCollectAt) })}</span>
+			<span class="zb-total">{t('board.itemCount', { n: board.trends.length })}</span>
+		</span>
+		<button type="button" class="zb-collect" onclick={() => void collectTrends()} disabled={board.collecting}>
+			{board.collecting ? t('board.collecting') : t('board.collect')}
+		</button>
+	</header>
 
-	<div class="stage">
-		<ZiblooPresenter presentation={presentation} onclick={greet} />
-	</div>
+	<main class="zb-main">
+		{#if board.collectError}
+			<p class="zb-error">{board.collectError}</p>
+		{/if}
 
-	<div class="entries">
-		<a class="card entry training" href="/training">
-			<span class="emoji">🏃</span>
-			<strong>{t('mode.training.name')}</strong>
-			<span class="desc">{t('mode.training.desc')}</span>
-		</a>
-		<a class="card entry focus" href="/focus">
-			<span class="emoji">🎯</span>
-			<strong>{t('mode.focus.name')}</strong>
-			<span class="desc">{t('mode.focus.desc')}</span>
-		</a>
-		<a class="card entry reminder" href="/reminders">
-			<span class="emoji">⏰</span>
-			<strong>{t('mode.reminder.name')}</strong>
-			<span class="desc">{t('mode.reminder.desc')}</span>
-		</a>
-	</div>
+		{#if board.trends.length === 0}
+			<div class="zb-empty-state">
+				<p>{t('board.emptyTrends')}</p>
+				<button type="button" class="zb-collect" onclick={() => void collectTrends()} disabled={board.collecting}>
+					{board.collecting ? t('board.collecting') : t('board.collectNow')}
+				</button>
+			</div>
+		{/if}
 
-	<section class="card quick">
-		<h2>{t('quick.title')}</h2>
-		<div class="quick-row">
-			{#each QUICK as n (n)}
-				<button class="btn ghost" onclick={() => startQuick(n)}>{t('quick.minutes', { n })}</button>
+		<div class="zb-board" role="region" aria-label={t('board.board')}>
+			{#if timerCards.length > 0}
+				<section class="zb-source zb-timers" aria-label={t('board.timers')}>
+					<header>
+						<h2>{t('board.timers')}</h2>
+						<small>{timerCards.length}</small>
+					</header>
+					<div class="zb-source-cards">
+						{#each timerCards as card (card.id)}
+							{@render tile(card)}
+						{/each}
+					</div>
+				</section>
+			{/if}
+			{#each sourceGroups as group (group.platform)}
+				<section class="zb-source" aria-label={PLATFORM_LABEL[group.platform]}>
+					<header>
+						<h2>{PLATFORM_LABEL[group.platform]}</h2>
+						<small>{group.cards.length}</small>
+					</header>
+					<div class="zb-source-cards">
+						{#each group.cards as card (card.id)}
+							{@render tile(card)}
+						{/each}
+					</div>
+				</section>
 			{/each}
 		</div>
-	</section>
+	</main>
+</div>
 
-	<footer>
-		<a href="/history">{t('history.title')}</a>
-		<span>·</span>
-		<a href="/settings">{t('settings.title')}</a>
-	</footer>
-</main>
+{#if openItem}
+	<TrendDrawer item={openItem} onClose={() => (openId = null)} />
+{/if}
 
-<style>
-	.home {
-		max-width: 560px;
-		margin: 0 auto;
-		padding: 1.5rem 1.25rem 3rem;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 1rem;
-		min-height: 100dvh;
-	}
+{#if helpOpen}
+	<div class="zb-help" onclick={() => (helpOpen = false)} role="presentation">
+		<div class="zb-help-card">
+			<h2>{t('board.help')}</h2>
+			<dl>
+				<dt>/</dt>
+				<dd>{t('board.search')}</dd>
+				<dt>c</dt>
+				<dd>{t('board.helpCollect')}</dd>
+				<dt>esc</dt>
+				<dd>{t('board.close')}</dd>
+			</dl>
+		</div>
+	</div>
+{/if}
 
-	.lockup {
-		width: min(62vw, 240px);
-		margin-top: 0.5rem;
-	}
+{#snippet tile(card: Card)}
+	{@const run = runFor(card.id)}
+	{@const phase = run ? engine.projectSession(run.session, runs.now || Date.now()) : null}
+	{#if card.kind === 'trend'}
+		<div
+			class="zb-card"
+			class:selected={openId === card.id}
+			role="button"
+			tabindex="0"
+			onclick={() => openTrend(card)}
+			onkeydown={(event) => {
+				if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault();
+					openTrend(card);
+				}
+			}}
+		>
+			{@render face(card, run, phase)}
+		</div>
+	{:else}
+		<div
+			class="zb-card"
+			class:timer={card.kind !== 'trend'}
+			class:quick={card.kind === 'quick'}
+			class:clock={run !== null}
+			class:paused={run !== null && run.session.pausedAt !== null}
+			class:zb-run={run !== null}
+			role="group"
+			aria-label={card.title}
+		>
+			{@render face(card, run, phase)}
+		</div>
+	{/if}
+{/snippet}
 
-	.greeting {
-		margin: 0;
-		color: var(--c-sub);
-	}
-
-	.stage {
-		width: 100%;
-		margin: 0.5rem 0;
-	}
-
-	.entries {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 0.75rem;
-		width: 100%;
-	}
-
-	.entry {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.25rem;
-		padding: 1rem 0.5rem;
-		text-align: center;
-		color: var(--c-text);
-		border-top: 4px solid var(--c-primary);
-	}
-
-	.entry.focus {
-		border-top-color: var(--c-focus-accent);
-	}
-
-	.entry.reminder {
-		border-top-color: var(--c-reminder-accent);
-	}
-
-	.entry .emoji {
-		font-size: 1.6rem;
-	}
-
-	.entry .desc {
-		font-size: 0.78rem;
-		color: var(--c-sub);
-	}
-
-	.quick {
-		width: 100%;
-	}
-
-	.quick h2 {
-		font-size: 1rem;
-		margin: 0 0 0.75rem;
-	}
-
-	.quick-row {
-		display: flex;
-		gap: 0.6rem;
-		flex-wrap: wrap;
-	}
-
-	footer {
-		display: flex;
-		gap: 0.75rem;
-		color: var(--c-sub);
-		margin-top: auto;
-	}
-
-	@media (max-width: 480px) {
-		.entries {
-			grid-template-columns: 1fr;
-		}
-		.entry {
-			flex-direction: row;
-			justify-content: flex-start;
-			gap: 0.75rem;
-			text-align: left;
-		}
-	}
-</style>
+{#snippet face(card: Card, run: ReturnType<typeof runFor>, phase: ReturnType<typeof engine.projectSession>)}
+	{#if card.kind === 'trend'}
+		{@const trend = trendById.get(card.id)}
+		<h3>{card.title}</h3>
+		{#if card.detail}<p>{card.detail}</p>{/if}
+		{#if trend}
+			<div class="zb-item-meta">
+				{#if trend.gained > 0}
+					<span class="zb-heat">+{compact(trend.gained)}</span>
+				{/if}
+				{#if trend.language}
+					<span>{trend.language}</span>
+				{/if}
+				<span>{compact(trend.score)}{PLATFORM_SCORE[trend.platform]}</span>
+				{#if trend.consecutiveDays > 1}
+					<span>{t('board.days', { n: trend.consecutiveDays })}</span>
+				{/if}
+				{#if trend.lastSeen === today && trend.firstSeen !== today}
+					<span>{t('board.reappeared')}</span>
+				{/if}
+				{#if trend.note}
+					<span>{t('board.note')}</span>
+				{/if}
+			</div>
+		{/if}
+	{:else}
+		<h3>{card.title}</h3>
+		{#if card.detail}<p>{card.detail}</p>{/if}
+	{/if}
+	{#if run && phase}
+		<p class="remain">{formatRemain(phase.remainMs)}</p>
+		<p class="phase">{t(phaseKey(phase.phase))} · {t('run.round', { n: phase.round, m: phase.rounds })}</p>
+		<div class="zb-actions">
+			{#if run.session.pausedAt !== null}
+				<button type="button" class="btn" onclick={() => resumeCard(card.id)}>{t('run.resume')}</button>
+			{:else}
+				<button type="button" class="btn" onclick={() => pauseCard(card.id)}>{t('run.pause')}</button>
+			{/if}
+			<button type="button" class="btn" onclick={() => skipCard(card.id)}>{t('run.skip')}</button>
+			<button type="button" class="btn" onclick={() => endCard(card.id)}>{t('run.end')}</button>
+		</div>
+	{:else if card.kind === 'training' || card.kind === 'focus' || card.kind === 'quick'}
+		<button type="button" class="btn" onclick={() => start(card)}>{card.kind === 'quick' ? card.title : t('common.start')}</button>
+	{/if}
+{/snippet}

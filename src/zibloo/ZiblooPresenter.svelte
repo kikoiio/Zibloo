@@ -3,7 +3,11 @@
 	// 四帧划水循环 + 抬爪招呼;整图轻悬浮;reduced-motion 时冻结。
 	import type { ZiblooPresentation } from '../core/zibloo/mapping.ts';
 
-	let { presentation, onclick }: { presentation: ZiblooPresentation; onclick?: () => void } = $props();
+	let {
+		presentation,
+		onclick,
+		size = 'stage'
+	}: { presentation: ZiblooPresentation; onclick?: () => void; size?: 'stage' | 'companion' } = $props();
 
 	const FRAMES = ['stroke-a', 'stroke-b', 'stroke-c', 'stroke-d'] as const;
 	const FRAME_URLS = FRAMES.map((f) => `/zibloo/frames/${f}.png`);
@@ -63,7 +67,7 @@
 <div class="zibloo-wrap" class:float>
 	<button
 		type="button"
-		class="zibloo-stage"
+		class="zibloo-stage {size}"
 		class:celebrate={presentation.pose === 'celebrate'}
 		class:summon={presentation.pose === 'summon-pop'}
 		aria-label="Zibloo"
@@ -109,6 +113,10 @@
 		width: min(64vw, 300px);
 		padding: 0;
 		transition: transform 0.15s ease;
+	}
+
+	.zibloo-stage.companion {
+		width: 112px;
 	}
 
 	.zibloo-stage:active {
