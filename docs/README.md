@@ -25,7 +25,7 @@
 
 | 意图 | 现状 | 证据 |
 |---|---|---|
-| 打开即跨来源发现流:搜索、排序、收藏,计时在紧凑工具条 | 已实现(视觉与交互未做浏览器验收) | `src/routes/+page.svelte`、`src/state/board.svelte.ts`、[决策 0010](decisions/0010-unified-discovery-feed.md) |
+| 打开即跨来源发现流:搜索、排序、收藏,计时在紧凑工具条 | 已实现:GitHub Actions 浏览器冒烟和手机宽度无横向溢出均通过;真实来源收取仍受 CORS 限制 | `src/routes/+page.svelte`、`src/state/board.svelte.ts`、[决策 0010](decisions/0010-unified-discovery-feed.md)、[CI 运行](https://github.com/kikoiio/Zibloo/actions/runs/42041916190) |
 | Trending 的卡片热度、抽屉笔记 | 已实现(无 token 补全、无周榜语言分榜;无侧栏、日报、观察名单、热点设置) | `src/core/trending/`、`src/routes/TrendDrawer.svelte` |
 | 看板单个可调时长计时器 | 已实现:默认 25 分钟,支持开始、暂停、继续和结束 | `src/routes/+page.svelte`、`src/state/runs.svelte.ts` |
 | 训练模板、专注循环、多张计时卡片 | 当前看板不提供;底层计时引擎仍保留相关计划类型 | `src/core/timer/` |
