@@ -140,6 +140,7 @@ try {
 
 	await page.goto(BASE, { waitUntil: 'load' });
 	await page.waitForSelector('.zb-app', { timeout: 10_000 });
+	await page.waitForFunction(() => document.querySelectorAll('.zb-feed .zb-card').length === 2);
 
 	// 主页面是跨来源发现流,来源保留为卡片标签
 	check('主页加载', (await page.locator('.zb-app').count()) === 1);
@@ -148,8 +149,10 @@ try {
 	check('跨来源卡片在同一列表', (await page.locator('.zb-feed .zb-card').count()) === 2);
 	const sources = await page.locator('.zb-source-label').allInnerTexts();
 	check('两条卡片保留各自来源', sources.includes('GitHub') && sources.includes('Hacker News'));
+	await page.waitForFunction(() => document.querySelector('.zb-source-label')?.textContent === 'GitHub');
 	check('新发现排序优先显示新条目', (await page.locator('.zb-source-label').first().innerText()) === 'GitHub');
 	await page.locator('.zb-sort-control select').selectOption('rank');
+	await page.waitForFunction(() => document.querySelector('.zb-source-label')?.textContent === 'Hacker News');
 	check('榜单排序交错来源名次', (await page.locator('.zb-source-label').first().innerText()) === 'Hacker News');
 	await page.locator('.zb-sort-control select').selectOption('recent');
 	check('无训练页', (await page.locator('a[href="/training"]').count()) === 0);
@@ -174,18 +177,23 @@ try {
 	// 多词搜索跨字段匹配;收藏视图可回看并在刷新后保留
 	const search = page.locator('.zb-search input');
 	await search.fill('compare local');
+	await page.waitForFunction(() => document.querySelectorAll('.zb-feed .zb-card').length === 1);
 	check('搜索匹配笔记中的多个词', (await page.locator('.zb-feed .zb-card').count()) === 1 && (await page.locator('.zb-card-title').innerText()) === 'example/project');
 	await search.fill('no-such-project');
+	await page.locator('.zb-no-results h2').waitFor({ state: 'visible' });
 	check('搜索无结果有明确提示', await page.locator('.zb-no-results h2').isVisible());
 	await search.fill('');
+	await page.waitForFunction(() => document.querySelectorAll('.zb-feed .zb-card').length === 2);
 	const saveButton = page.locator('.zb-card .zb-save').first();
 	await saveButton.click();
 	check('收藏状态更新', (await saveButton.getAttribute('aria-pressed')) === 'true');
 	await page.locator('.zb-view-switch button').nth(1).click();
+	await page.waitForFunction(() => document.querySelectorAll('.zb-feed .zb-card').length === 1);
 	check('收藏视图显示条目', (await page.locator('.zb-feed .zb-card').count()) === 1);
 	await page.reload({ waitUntil: 'load' });
 	await page.waitForSelector('.zb-app', { timeout: 10_000 });
 	await page.locator('.zb-view-switch button').nth(1).click();
+	await page.waitForFunction(() => document.querySelectorAll('.zb-feed .zb-card').length === 1);
 	check('收藏刷新后仍保留', (await page.locator('.zb-feed .zb-card').count()) === 1);
 	await page.locator('.zb-card-title').click();
 	check('详情抽屉显示来源', (await page.locator('.zb-drawer-origin').innerText()).includes('GitHub'));
@@ -193,6 +201,7 @@ try {
 	await page.locator('.zb-drawer textarea').fill('local research notes');
 	await page.locator('.zb-drawer .btn', { hasText: '关闭' }).click();
 	await search.fill('research notes');
+	await page.waitForFunction(() => document.querySelectorAll('.zb-feed .zb-card').length === 1);
 	check('搜索可找到个人笔记', (await page.locator('.zb-feed .zb-card').count()) === 1);
 	await page.screenshot({ path: `${ART}/smoke-search.png`, fullPage: true });
 
