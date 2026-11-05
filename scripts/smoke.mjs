@@ -102,7 +102,7 @@ try {
 		description: 'A local-first project for organizing research notes.',
 		score: 1200,
 		secondary: 80,
-		rank: 1,
+		rank: 4,
 		language: 'TypeScript',
 		gained: 24,
 		firstSeen: today,
@@ -110,7 +110,7 @@ try {
 		consecutiveDays: 2,
 		seenDates: [today],
 		note: 'Compare local search.',
-		history: [{ date: today, score: 1200, gained: 24, rank: 1 }]
+		history: [{ date: today, score: 1200, gained: 24, rank: 4 }]
 	};
 	const sampleHnTrend = {
 		id: 'hn:42',
