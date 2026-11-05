@@ -1,61 +1,40 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import {
-		compact,
-		PLATFORM_LABEL,
-		PLATFORM_SCORE,
-		PLATFORMS,
-		type Platform,
-		type TrendRecord
-	} from '../core/trending/hit.ts';
+	import { compact, PLATFORM_LABEL, PLATFORM_SCORE, type TrendRecord } from '../core/trending/hit.ts';
+	import { discoverItems, type DiscoverySort, type DiscoveryView } from '../core/trending/discovery.ts';
 	import * as engine from '../core/timer/engine.ts';
-	import type { Phase, PomodoroPlan, QuickPlan, TrainingPlan } from '../core/timer/types.ts';
-	import type { MessageKey } from '../i18n/messages.ts';
-	import { loadBoard, collectTrends, board } from '../state/board.svelte.ts';
+	import type { QuickPlan } from '../core/timer/types.ts';
+	import { board, collectTrends, loadBoard, toggleSaved } from '../state/board.svelte.ts';
 	import { t } from '../state/i18n.svelte.ts';
-	import { loadPresets, trainingPresets } from '../state/presets.svelte.ts';
-	import { boardPresentation, endCard, loadRuns, pauseCard, resumeCard, runFor, runs, skipCard, startCardRun } from '../state/runs.svelte.ts';
+	import { boardPresentation, endCard, loadRuns, pauseCard, resumeCard, runFor, runs, startCardRun } from '../state/runs.svelte.ts';
 	import { greet } from '../state/timer.svelte.ts';
 	import ZiblooPresenter from '../zibloo/ZiblooPresenter.svelte';
 	import TrendDrawer from './TrendDrawer.svelte';
 	import './board.css';
 
-	type TrendCard = {
-		kind: 'trend';
-		id: string;
-		title: string;
-		detail: string;
-		href: string;
-		platform: Platform;
-		language: string | null;
-	};
-	type TimerCard =
-		| { kind: 'training'; id: string; title: string; detail: string; plan: TrainingPlan }
-		| { kind: 'focus'; id: string; title: string; detail: string; plan: PomodoroPlan }
-		| { kind: 'quick'; id: string; title: string; detail: string; plan: QuickPlan };
-	type Card = TrendCard | TimerCard;
-
-	const TEMPLATES: { id: string; label: MessageKey; plan: TrainingPlan }[] = [
-		{ id: 'training:classic', label: 'training.template.classic', plan: { kind: 'training', prepareSec: 10, workSec: 30, restSec: 15, rounds: 8 } },
-		{ id: 'training:tabata', label: 'training.template.tabata', plan: { kind: 'training', prepareSec: 10, workSec: 20, restSec: 10, rounds: 8 } },
-		{ id: 'training:strength', label: 'training.template.strength', plan: { kind: 'training', prepareSec: 10, workSec: 40, restSec: 20, rounds: 6 } },
-		{ id: 'training:endurance', label: 'training.template.endurance', plan: { kind: 'training', prepareSec: 10, workSec: 60, restSec: 30, rounds: 4 } }
-	];
-	const FOCUS_MIN = [15, 20, 25, 50];
-	const QUICK_MIN = [1, 3, 5, 10];
-
+	const SIMPLE_TIMER_ID = 'timer:simple';
+	const PAGE_SIZE = 24;
 	let query = $state('');
+	let durationMinutes = $state<number | undefined>(25);
 	let openId = $state<string | null>(null);
 	let helpOpen = $state(false);
+	let view = $state<DiscoveryView>('discover');
+	let sort = $state<DiscoverySort>('recent');
+	let visibleLimit = $state(PAGE_SIZE);
 	const today = new Date().toISOString().slice(0, 10);
+	const canStartTimer = $derived(
+		durationMinutes !== undefined && Number.isInteger(durationMinutes) && durationMinutes >= 1 && durationMinutes <= 1440
+	);
+	const timerRun = $derived(runFor(SIMPLE_TIMER_ID));
+	const timerPhase = $derived(timerRun ? engine.projectSession(timerRun.session, runs.now || Date.now()) : null);
 
 	onMount(() => {
 		loadBoard();
 		loadRuns();
-		loadPresets();
 		function onKey(event: KeyboardEvent): void {
-			const tag = (event.target as HTMLElement | null)?.tagName;
-			const typing = tag === 'INPUT' || tag === 'TEXTAREA';
+			const target = event.target;
+			const tag = target instanceof HTMLElement ? target.tagName : '';
+			const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (target instanceof HTMLElement && target.isContentEditable);
 			if (event.key === 'Escape') {
 				openId = null;
 				helpOpen = false;
@@ -72,119 +51,32 @@
 				return;
 			}
 			if (typing) return;
-			if (event.key === 'c') void collectTrends();
+			if (event.key.toLowerCase() === 'c') void collectTrends();
 		}
 		window.addEventListener('keydown', onKey);
 		return () => window.removeEventListener('keydown', onKey);
 	});
 
 	const presentation = $derived(boardPresentation());
-
-	function focusPlan(minutes: number): PomodoroPlan {
-		return { kind: 'focus', focusSec: minutes * 60, shortRestSec: 5 * 60, longRestSec: 15 * 60, longRestEvery: 4, rounds: 4 };
-	}
+	const trendById = $derived(new Map(board.trends.map((item) => [item.id, item])));
+	const openItem = $derived(openId ? (trendById.get(openId) ?? null) : null);
+	const orderedItems = $derived(
+		discoverItems({ items: board.trends, query, view, savedIds: board.savedIds, sort })
+	);
+	const visibleItems = $derived(orderedItems.slice(0, visibleLimit));
 
 	function quickPlan(minutes: number): QuickPlan {
 		return { kind: 'quick', durationSec: minutes * 60 };
 	}
 
-	function matches(title: string, detail: string, extra = ''): boolean {
-		const q = query.trim().toLowerCase();
-		if (!q) return true;
-		return `${title} ${detail} ${extra}`.toLowerCase().includes(q);
-	}
-
-	const timerCards = $derived.by(() => {
-		const list: TimerCard[] = [];
-		for (const template of TEMPLATES) {
-			const title = t(template.label);
-			const detail = `${template.plan.workSec}/${template.plan.restSec} × ${template.plan.rounds}`;
-			if (matches(title, detail)) list.push({ kind: 'training', id: template.id, title, detail, plan: template.plan });
-		}
-		for (const preset of trainingPresets.list) {
-			const detail = `${preset.plan.workSec}/${preset.plan.restSec} × ${preset.plan.rounds}`;
-			if (matches(preset.name, detail)) list.push({ kind: 'training', id: `preset:${preset.id}`, title: preset.name, detail, plan: preset.plan });
-		}
-		for (const minutes of FOCUS_MIN) {
-			const title = `${t('mode.focus.name')} ${minutes}`;
-			if (matches(title, '')) list.push({ kind: 'focus', id: `focus:${minutes}`, title, detail: t('mode.focus.desc'), plan: focusPlan(minutes) });
-		}
-		for (const minutes of QUICK_MIN) {
-			const title = t('quick.minutes', { n: minutes });
-			if (matches(title, '')) list.push({ kind: 'quick', id: `quick:${minutes}`, title, detail: t('quick.title'), plan: quickPlan(minutes) });
-		}
-		for (const pinned of board.pinned) {
-			if (!matches(pinned.label, '')) continue;
-			if (pinned.plan.kind === 'training') {
-				list.push({
-					kind: 'training',
-					id: pinned.id,
-					title: pinned.label,
-					detail: `${pinned.plan.workSec}/${pinned.plan.restSec} × ${pinned.plan.rounds}`,
-					plan: pinned.plan
-				});
-			} else if (pinned.plan.kind === 'focus') {
-				list.push({ kind: 'focus', id: pinned.id, title: pinned.label, detail: t('mode.focus.desc'), plan: pinned.plan });
-			} else {
-				list.push({ kind: 'quick', id: pinned.id, title: pinned.label, detail: t('quick.title'), plan: pinned.plan });
-			}
-		}
-		return [...list].sort((a, b) => Number(Boolean(runFor(b.id))) - Number(Boolean(runFor(a.id))));
-	});
-
-	const sourceGroups = $derived.by(() => {
-		const groups: { platform: Platform; cards: TrendCard[] }[] = [];
-		for (const platform of PLATFORMS) {
-			const cards: TrendCard[] = [];
-			for (const trend of board.trends) {
-				if (trend.platform !== platform) continue;
-				const extra = `${PLATFORM_LABEL[trend.platform]} ${trend.note} ${trend.language ?? ''}`;
-				if (!matches(trend.name, trend.description, extra)) continue;
-				cards.push({
-					kind: 'trend',
-					id: trend.id,
-					title: trend.name,
-					detail: trend.description,
-					href: trend.url,
-					platform: trend.platform,
-					language: trend.language
-				});
-			}
-			if (cards.length > 0) groups.push({ platform, cards });
-		}
-		return groups;
-	});
-
-	const trendById = $derived(new Map(board.trends.map((item: TrendRecord) => [item.id, item])));
-	const openItem = $derived(openId ? (trendById.get(openId) ?? null) : null);
-
-	function phaseKey(phase: Phase): MessageKey {
-		switch (phase) {
-			case 'work':
-				return 'phase.work';
-			case 'rest':
-				return 'phase.rest';
-			case 'long-rest':
-				return 'phase.long-rest';
-			case 'prepare':
-				return 'phase.prepare';
-			default: {
-				const neverPhase: never = phase;
-				return neverPhase;
-			}
-		}
+	function startTimer(): void {
+		if (!canStartTimer || durationMinutes === undefined) return;
+		startCardRun({ cardId: SIMPLE_TIMER_ID, kind: 'quick', plan: quickPlan(durationMinutes) });
 	}
 
 	function formatRemain(ms: number): string {
 		const total = Math.max(0, Math.ceil(ms / 1000));
-		const minutes = Math.floor(total / 60);
-		const seconds = total % 60;
-		return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-	}
-
-	function start(card: Card): void {
-		if (card.kind === 'trend') return;
-		startCardRun({ cardId: card.id, kind: card.kind, plan: card.plan });
+		return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 	}
 
 	function formatCollectAt(at: number | null): string {
@@ -192,8 +84,14 @@
 		return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(at);
 	}
 
-	function openTrend(card: Card): void {
-		if (card.kind === 'trend') openId = card.id;
+	function formatDate(value: string): string {
+		const timestamp = Date.parse(`${value}T00:00:00.000Z`);
+		if (!Number.isFinite(timestamp)) return value;
+		return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(timestamp);
+	}
+
+	function showMore(): void {
+		visibleLimit += PAGE_SIZE;
 	}
 </script>
 
@@ -205,7 +103,6 @@
 			<input type="search" bind:value={query} placeholder={t('board.search')} aria-label={t('board.search')} />
 		</label>
 		<span class="zb-meta">
-			{#if runs.items.length > 0}<span class="zb-running">{t('board.runningMany', { n: runs.items.length })}</span>{/if}
 			<span>{board.lastCollectAt === null ? formatCollectAt(null) : t('board.lastCollectAt', { time: formatCollectAt(board.lastCollectAt) })}</span>
 			<span class="zb-total">{t('board.itemCount', { n: board.trends.length })}</span>
 		</span>
@@ -216,46 +113,131 @@
 
 	<main class="zb-main">
 		{#if board.collectError}
-			<p class="zb-error">{board.collectError}</p>
+			<aside class="zb-error" role="status">
+				<strong>{t('board.collectIssue')}</strong>
+				<span>{t('board.collectIssueHint')}</span>
+				<details><summary>{t('board.details')}</summary><code>{board.collectError}</code></details>
+			</aside>
 		{/if}
+		{#if board.saveError}<p class="zb-error" role="alert">{t('board.saveFailed')}</p>{/if}
+
+		<section class="zb-intro">
+			<div>
+				<h1>{t('board.title')}</h1>
+				<p>{t('board.subtitle')}</p>
+			</div>
+			<button class="zb-help-trigger" type="button" aria-label={t('board.helpButton')} onclick={() => (helpOpen = true)}>?</button>
+		</section>
+
+		<section class="zb-timer-bar" aria-label={t('board.timers')}>
+			<div class="zb-timer-symbol" aria-hidden="true">◷</div>
+			<div class="zb-timer-copy">
+				<strong>{t('quick.title')}</strong>
+				<small>{t('board.timerHint')}</small>
+			</div>
+			{#if timerRun && timerPhase}
+				<strong class="zb-timer-remain" aria-live="off">{formatRemain(timerPhase.remainMs)}</strong>
+				{#if timerRun.session.pausedAt !== null}<span class="zb-timer-status">{t('timer.paused')}</span>{/if}
+				<div class="zb-timer-actions">
+					{#if timerRun.session.pausedAt !== null}
+						<button class="btn" type="button" onclick={() => resumeCard(SIMPLE_TIMER_ID)}>{t('run.resume')}</button>
+					{:else}
+						<button class="btn" type="button" onclick={() => pauseCard(SIMPLE_TIMER_ID)}>{t('run.pause')}</button>
+					{/if}
+					<button class="btn quiet" type="button" onclick={() => endCard(SIMPLE_TIMER_ID)}>{t('run.end')}</button>
+				</div>
+			{:else}
+				<label class="zb-duration-control">
+					<span>{t('timer.duration')}</span>
+					<input aria-label={t('timer.duration')} type="number" min="1" max="1440" step="1" bind:value={durationMinutes} />
+					<span>{t('common.min')}</span>
+				</label>
+				<button class="btn zb-start" type="button" onclick={startTimer} disabled={!canStartTimer}>{t('common.start')}</button>
+			{/if}
+		</section>
 
 		{#if board.trends.length === 0}
-			<div class="zb-empty-state">
+			<section class="zb-empty-state">
+				<h2>{t('board.emptyTitle')}</h2>
 				<p>{t('board.emptyTrends')}</p>
-				<button type="button" class="zb-collect" onclick={() => void collectTrends()} disabled={board.collecting}>
+				<button class="zb-collect" type="button" onclick={() => void collectTrends()} disabled={board.collecting}>
 					{board.collecting ? t('board.collecting') : t('board.collectNow')}
 				</button>
-			</div>
-		{/if}
+			</section>
+		{:else}
+			<section class="zb-discovery" aria-label={t('board.board')}>
+				<div class="zb-discovery-head">
+					<div class="zb-view-switch" aria-label={t('board.board')}>
+						<button type="button" class:active={view === 'discover'} aria-pressed={view === 'discover'} onclick={() => (view = 'discover')}>
+							{t('board.discover')}
+						</button>
+						<button type="button" class:active={view === 'saved'} aria-pressed={view === 'saved'} onclick={() => (view = 'saved')}>
+							{t('board.saved')}<span>{board.savedIds.length}</span>
+						</button>
+					</div>
+					<label class="zb-sort-control">
+						<span>{t('board.sort')}</span>
+						<select bind:value={sort}>
+							<option value="recent">{t('board.sortRecent')}</option>
+							<option value="rank">{t('board.sortRank')}</option>
+						</select>
+					</label>
+				</div>
+				<p class="zb-sort-hint">{sort === 'rank' ? t('board.rankHint') : t('board.recentHint')}</p>
+				<p class="zb-result-count" aria-live="polite">{t('board.results', { n: orderedItems.length })}</p>
 
-		<div class="zb-board" role="region" aria-label={t('board.board')}>
-			{#if timerCards.length > 0}
-				<section class="zb-source zb-timers" aria-label={t('board.timers')}>
-					<header>
-						<h2>{t('board.timers')}</h2>
-						<small>{timerCards.length}</small>
-					</header>
-					<div class="zb-source-cards">
-						{#each timerCards as card (card.id)}
-							{@render tile(card)}
+				{#if orderedItems.length === 0}
+					<div class="zb-empty-state zb-no-results">
+						<h2>{view === 'saved' && !query ? t('board.savedEmptyTitle') : t('board.noResultsTitle')}</h2>
+						<p>{view === 'saved' && !query ? t('board.savedEmpty') : t('board.noResults')}</p>
+						{#if query}
+							<button class="btn" type="button" onclick={() => (query = '')}>{t('board.clearSearch')}</button>
+						{:else if view === 'saved'}
+							<button class="btn" type="button" onclick={() => (view = 'discover')}>{t('board.backDiscover')}</button>
+						{/if}
+					</div>
+				{:else}
+					<div class="zb-feed">
+						{#each visibleItems as item (item.id)}
+							<article class="zb-card">
+								<div class="zb-card-topline">
+									<span class="zb-source-label">{PLATFORM_LABEL[item.platform]}</span>
+									<span class="zb-source-rank">#{item.rank}</span>
+									<button
+									class="zb-save"
+									type="button"
+									aria-label={t(board.savedIds.includes(item.id) ? 'board.unsaveItem' : 'board.saveItem', { name: item.name })}
+									aria-pressed={board.savedIds.includes(item.id)}
+									title={t(board.savedIds.includes(item.id) ? 'board.unsave' : 'board.save')}
+									onclick={() => toggleSaved(item.id)}
+								>{board.savedIds.includes(item.id) ? '★' : '☆'}</button>
+								</div>
+								<h2><button class="zb-card-title" type="button" onclick={() => (openId = item.id)}>{item.name}</button></h2>
+								<p class="zb-card-description">{item.description || t('board.noDescription')}</p>
+								<div class="zb-card-signals">
+									{#if item.firstSeen === today}<span class="zb-new-label">{t('board.new')}</span>{/if}
+									{#if item.score > 0}<span>{compact(item.score)}{PLATFORM_SCORE[item.platform]}</span>{/if}
+									{#if item.gained > 0}<span class="zb-growth">+{compact(item.gained)} {PLATFORM_SCORE[item.platform]}</span>{/if}
+									{#if item.consecutiveDays > 1}<span>{t('board.days', { n: item.consecutiveDays })}</span>{/if}
+									{#if item.note}<span class="zb-note-signal">{t('board.note')}</span>{/if}
+									<span class="zb-last-seen">{t('board.lastSeen', { date: formatDate(item.lastSeen) })}</span>
+								</div>
+								<footer>
+									<button class="zb-details-link" type="button" onclick={() => (openId = item.id)}>{t('board.details')}</button>
+									<a href={item.url} target="_blank" rel="noreferrer" aria-label={t('board.openItem', { name: item.name })}>{t('board.open')}</a>
+								</footer>
+							</article>
 						{/each}
 					</div>
-				</section>
-			{/if}
-			{#each sourceGroups as group (group.platform)}
-				<section class="zb-source" aria-label={PLATFORM_LABEL[group.platform]}>
-					<header>
-						<h2>{PLATFORM_LABEL[group.platform]}</h2>
-						<small>{group.cards.length}</small>
-					</header>
-					<div class="zb-source-cards">
-						{#each group.cards as card (card.id)}
-							{@render tile(card)}
-						{/each}
-					</div>
-				</section>
-			{/each}
-		</div>
+					{#if visibleItems.length < orderedItems.length}
+						<div class="zb-load-more-wrap">
+							<p>{t('board.shown', { n: visibleItems.length, total: orderedItems.length })}</p>
+							<button class="btn" type="button" onclick={showMore}>{t('board.showMore', { n: Math.min(PAGE_SIZE, orderedItems.length - visibleItems.length) })}</button>
+						</div>
+					{/if}
+				{/if}
+			</section>
+		{/if}
 	</main>
 </div>
 
@@ -264,97 +246,18 @@
 {/if}
 
 {#if helpOpen}
-	<div class="zb-help" onclick={() => (helpOpen = false)} role="presentation">
-		<div class="zb-help-card">
-			<h2>{t('board.help')}</h2>
+	<div class="zb-help" role="presentation">
+		<button class="zb-help-backdrop" type="button" aria-label={t('board.close')} onclick={() => (helpOpen = false)}></button>
+		<div class="zb-help-card" role="dialog" aria-modal="true" aria-label={t('board.help')} tabindex="-1">
+			<header>
+				<h2>{t('board.help')}</h2>
+				<button class="btn" type="button" onclick={() => (helpOpen = false)}>{t('board.close')}</button>
+			</header>
 			<dl>
-				<dt>/</dt>
-				<dd>{t('board.search')}</dd>
-				<dt>c</dt>
-				<dd>{t('board.helpCollect')}</dd>
-				<dt>esc</dt>
-				<dd>{t('board.close')}</dd>
+				<dt>/</dt><dd>{t('board.search')}</dd>
+				<dt>c</dt><dd>{t('board.helpCollect')}</dd>
+				<dt>esc</dt><dd>{t('board.close')}</dd>
 			</dl>
 		</div>
 	</div>
 {/if}
-
-{#snippet tile(card: Card)}
-	{@const run = runFor(card.id)}
-	{@const phase = run ? engine.projectSession(run.session, runs.now || Date.now()) : null}
-	{#if card.kind === 'trend'}
-		<div
-			class="zb-card"
-			class:selected={openId === card.id}
-			role="button"
-			tabindex="0"
-			onclick={() => openTrend(card)}
-			onkeydown={(event) => {
-				if (event.key === 'Enter' || event.key === ' ') {
-					event.preventDefault();
-					openTrend(card);
-				}
-			}}
-		>
-			{@render face(card, run, phase)}
-		</div>
-	{:else}
-		<div
-			class="zb-card timer"
-			class:quick={card.kind === 'quick'}
-			class:clock={run !== null}
-			class:paused={run !== null && run.session.pausedAt !== null}
-			class:zb-run={run !== null}
-			role="group"
-			aria-label={card.title}
-		>
-			{@render face(card, run, phase)}
-		</div>
-	{/if}
-{/snippet}
-
-{#snippet face(card: Card, run: ReturnType<typeof runFor>, phase: ReturnType<typeof engine.projectSession>)}
-	{#if card.kind === 'trend'}
-		{@const trend = trendById.get(card.id)}
-		<h3>{card.title}</h3>
-		{#if card.detail}<p>{card.detail}</p>{/if}
-		{#if trend}
-			<div class="zb-item-meta">
-				{#if trend.gained > 0}
-					<span class="zb-heat">+{compact(trend.gained)}</span>
-				{/if}
-				{#if trend.language}
-					<span>{trend.language}</span>
-				{/if}
-				<span>{compact(trend.score)}{PLATFORM_SCORE[trend.platform]}</span>
-				{#if trend.consecutiveDays > 1}
-					<span>{t('board.days', { n: trend.consecutiveDays })}</span>
-				{/if}
-				{#if trend.lastSeen === today && trend.firstSeen !== today}
-					<span>{t('board.reappeared')}</span>
-				{/if}
-				{#if trend.note}
-					<span>{t('board.note')}</span>
-				{/if}
-			</div>
-		{/if}
-	{:else}
-		<h3>{card.title}</h3>
-		{#if card.detail}<p>{card.detail}</p>{/if}
-	{/if}
-	{#if run && phase}
-		<p class="remain">{formatRemain(phase.remainMs)}</p>
-		<p class="phase">{t(phaseKey(phase.phase))} · {t('run.round', { n: phase.round, m: phase.rounds })}</p>
-		<div class="zb-actions">
-			{#if run.session.pausedAt !== null}
-				<button type="button" class="btn" onclick={() => resumeCard(card.id)}>{t('run.resume')}</button>
-			{:else}
-				<button type="button" class="btn" onclick={() => pauseCard(card.id)}>{t('run.pause')}</button>
-			{/if}
-			<button type="button" class="btn" onclick={() => skipCard(card.id)}>{t('run.skip')}</button>
-			<button type="button" class="btn" onclick={() => endCard(card.id)}>{t('run.end')}</button>
-		</div>
-	{:else if card.kind === 'training' || card.kind === 'focus' || card.kind === 'quick'}
-		<button type="button" class="btn" onclick={() => start(card)}>{card.kind === 'quick' ? card.title : t('common.start')}</button>
-	{/if}
-{/snippet}

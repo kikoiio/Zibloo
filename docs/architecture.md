@@ -1,6 +1,6 @@
 # Zibloo 架构(当前实现)
 
-本文描述仓库里的网页端实现。产品范围见 [`intent.md`](intent.md),平台决策见 [0009](decisions/0009-web-only.md)。核对日期:2026-11-04。
+本文描述仓库里的网页端实现。产品范围见 [`intent.md`](intent.md),平台决策见 [0009](decisions/0009-web-only.md),发现流见 [0010](decisions/0010-unified-discovery-feed.md)。核对日期:2026-11-05。
 
 ## 栈
 
@@ -8,7 +8,7 @@
 |---|---|---|
 | UI | Svelte 5 + SvelteKit,静态适配器 | `package.json`、`src/routes/`、`vite.config.ts` |
 | 运行端 | 浏览器网页;当前只维护网页端 | `src/platform/web/`、[决策 0009](decisions/0009-web-only.md) |
-| 持久化 | Dexie 存计时历史;localStorage 存设置、训练预设、热点缓存、钉选项和进行中的计时 | `src/persistence/db.ts`、`src/state/` |
+| 持久化 | Dexie 存计时历史;localStorage 存设置、训练预设、热点缓存、收藏项、钉选项和进行中的计时 | `src/persistence/db.ts`、`src/state/` |
 | 验证 | Vitest + fast-check;Playwright 网页冒烟;GitHub Actions 网页 CI | `src/**/*.test.ts`、`scripts/smoke.mjs`、`.github/workflows/ci.yml` |
 
 当前无原生外壳、服务端账号或应用商店发布目标。
@@ -35,8 +35,8 @@ src/
 │  ├─ data/              transfer.ts 备份信封
 │  └─ tz.ts
 ├─ state/                Svelte 5 runes;副作用编排
-│  ├─ board.svelte.ts    热点缓存、收取
-│  ├─ runs.svelte.ts     看板上的多张计时
+│  ├─ board.svelte.ts    热点缓存、收藏与收取
+│  ├─ runs.svelte.ts     看板计时会话
 │  ├─ timer.svelte.ts    /run 单会话
 │  ├─ presets.svelte.ts
 │  └─ settings.svelte.ts
@@ -59,7 +59,7 @@ flowchart LR
 
 ## 看板与热点
 
-主页 `src/routes/+page.svelte` 是一块按来源纵向分组的大看板。训练、专注和快捷计时放在「计时」块。热点卡片支持笔记和打开来源;顶栏提供搜索与手动收取。
+主页 `src/routes/+page.svelte` 是跨来源的项目发现流。卡片按首次发现时间或最近上榜日期及来源榜单位置排列,来源只显示为标签。搜索覆盖标题、简介、来源、语言和笔记;收藏 ID 与热点缓存分开写入 localStorage,收藏条目在 400 条热点缓存裁剪时继续保留。详情抽屉展示原始来源指标、上榜历史、笔记和原链接。单一快捷计时器默认 25 分钟,在紧凑工具条内设置、开始、暂停、继续或结束。
 
 `src/state/board.svelte.ts` 并行请求 `core/trending/sources.ts` 的十个来源。开发时 `fetchText` 通过 Vite 的 `/api/fetch` 代理;静态网页生产环境直接请求来源,因此部分来源会被浏览器 CORS 策略拦截。单个来源失败不影响其他来源。热点合并保留首次出现时间和笔记,缓存写入 localStorage。
 
@@ -67,7 +67,7 @@ flowchart LR
 
 `TimerPlan` 为 `training | focus | quick`。`expandSegments` 把计划展开为绝对时间段;暂停时记录锚点,恢复时平移尚未完成的段。剩余时间始终由 `projectSession(session, now)` 计算。
 
-看板的 `src/state/runs.svelte.ts` 为每张计时卡保存一份会话,因此可以同时运行多张。页面计时器每 250 毫秒刷新当前时间;自然完成或用户结束后写入 Dexie 历史。`/run` 与 `src/state/timer.svelte.ts` 保留单会话网页路径。两条路径的提示音都只在页面可见时播放;后台计时可能受浏览器节流,关闭页面后不会继续触发提示。
+看板计时由 `src/state/runs.svelte.ts` 保存会话,卡片使用固定 ID,页面计时器每 250 毫秒刷新当前时间;自然完成或用户结束后写入 Dexie 历史。主页不再展示训练模板、专注周期或多个快捷时长卡片。`/run` 与 `src/state/timer.svelte.ts` 仍保留单会话网页路径。提示音只在页面可见时播放;后台计时可能受浏览器节流,关闭页面后不会继续触发提示。
 
 ## 角色与声音
 
@@ -79,7 +79,7 @@ flowchart LR
 |---|---|---|
 | 历史 | Dexie `zibloo`,schema v4 | `core/data/transfer.ts` 的 `zibloo-backup` v1 信封 |
 | 训练预设、语言 / 声音 | localStorage | 预设进备份;设置不进备份 |
-| 热点、钉选项、进行中的看板计时 | localStorage | 不进备份 |
+| 热点缓存、收藏 ID、钉选项、进行中的看板计时 | localStorage | 不进备份 |
 
 当前没有备份导入/导出 UI。若将来恢复导入界面,覆盖现有历史与预设前必须先确认。解析器拒绝版本或 `kind` 不匹配的文件,并忽略旧备份中的 `reminders` 字段。
 

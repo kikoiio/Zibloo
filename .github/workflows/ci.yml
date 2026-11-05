@@ -40,7 +40,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Build web app
         run: npm run build
-      - name: Smoke test (22 checks)
+      - name: Browser smoke (discovery and timer flows)
         run: npm run smoke
       - name: Save smoke screenshots
         if: always()

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { compact, PLATFORM_SCORE, PLATFORM_SHORT, type TrendRecord } from '../core/trending/hit.ts';
+	import { compact, PLATFORM_LABEL, PLATFORM_SCORE, PLATFORM_SHORT, type TrendRecord } from '../core/trending/hit.ts';
 	import { t } from '../state/i18n.svelte.ts';
-	import { setNote } from '../state/board.svelte.ts';
+	import { board, setNote, toggleSaved } from '../state/board.svelte.ts';
 
 	let { item, onClose }: { item: TrendRecord; onClose: () => void } = $props();
 
@@ -12,19 +12,31 @@
 <div class="zb-backdrop" onclick={onClose} role="presentation"></div>
 <div class="zb-drawer" role="dialog" aria-label={item.name}>
 	<header>
-		<h2>{item.name}</h2>
-		<button type="button" class="btn" onclick={onClose}>{t('board.close')}</button>
+		<div>
+			<p class="zb-drawer-origin">{PLATFORM_LABEL[item.platform]} {t('board.sourceRank', { n: item.rank })}</p>
+			<h2>{item.name}</h2>
+		</div>
+		<div class="zb-drawer-header-actions">
+			<button
+				type="button"
+				class="zb-save"
+				aria-pressed={board.savedIds.includes(item.id)}
+				aria-label={t(board.savedIds.includes(item.id) ? 'board.unsaveItem' : 'board.saveItem', { name: item.name })}
+				onclick={() => toggleSaved(item.id)}
+			>{board.savedIds.includes(item.id) ? '★' : '☆'}</button>
+			<button type="button" class="btn" onclick={onClose}>{t('board.close')}</button>
+		</div>
 	</header>
 	{#if item.description}
 		<p>{item.description}</p>
 	{/if}
 	<div class="zb-stats">
 		<div>
-			<span>{PLATFORM_SHORT[item.platform]}</span>
-			<b>{compact(item.score)}{PLATFORM_SCORE[item.platform]}</b>
+			<span>{PLATFORM_SHORT[item.platform]} {t('board.totalScore')}</span>
+			<b>{item.score > 0 ? `${compact(item.score)}${PLATFORM_SCORE[item.platform]}` : '—'}</b>
 		</div>
 		<div>
-			<span>{t('board.today')}</span>
+			<span>{t('board.todayGain')}</span>
 			<b>{item.gained > 0 ? `+${compact(item.gained)}` : '—'}</b>
 		</div>
 		<div>
