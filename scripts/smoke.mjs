@@ -1,5 +1,5 @@
 // scripts/smoke.mjs — 网页版冒烟验收:构建产物上跑 Chromium,
-// 覆盖看板入口、快捷计时全流程、看板训练跳段与声音资产。
+// 覆盖跨来源发现、搜索、收藏、详情、单个计时器与声音资产。
 // CI 里运行;本机也可 npm run smoke。
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -92,15 +92,66 @@ try {
 	const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 	const errors = [];
 	page.on('pageerror', (e) => errors.push(String(e)));
+	const today = new Date().toISOString().slice(0, 10);
+	const sampleTrend = {
+		id: 'github:example/project',
+		platform: 'github',
+		key: 'example/project',
+		name: 'example/project',
+		url: 'https://github.com/example/project',
+		description: 'A local-first project for organizing research notes.',
+		score: 1200,
+		secondary: 80,
+		rank: 1,
+		language: 'TypeScript',
+		gained: 24,
+		firstSeen: today,
+		lastSeen: today,
+		consecutiveDays: 2,
+		seenDates: [today],
+		note: 'Compare local search.',
+		history: [{ date: today, score: 1200, gained: 24, rank: 1 }]
+	};
+	const sampleHnTrend = {
+		id: 'hn:42',
+		platform: 'hn',
+		key: '42',
+		name: 'A local-first tools discussion',
+		url: 'https://news.ycombinator.com/item?id=42',
+		description: 'Useful products shared by founders.',
+		score: 420,
+		secondary: 18,
+		rank: 1,
+		language: null,
+		gained: 0,
+		firstSeen: new Date(Date.now() - 86_400_000).toISOString().slice(0, 10),
+		lastSeen: today,
+		consecutiveDays: 1,
+		seenDates: [today],
+		note: '',
+		history: [{ date: today, score: 420, gained: 0, rank: 1 }]
+	};
+	await page.addInitScript(({ sampleTrends }) => {
+		if (!localStorage.getItem('zibloo.board.trends.v1')) {
+			localStorage.setItem('zibloo.board.trends.v1', JSON.stringify({ at: Date.now(), items: sampleTrends }));
+		}
+		if (!localStorage.getItem('zibloo.board.saved.v1')) localStorage.setItem('zibloo.board.saved.v1', '[]');
+	}, { sampleTrends: [sampleTrend, sampleHnTrend] });
 
 	await page.goto(BASE, { waitUntil: 'load' });
 	await page.waitForSelector('.zb-app', { timeout: 10_000 });
 
-	// 主页是一块按来源分组的看板:热点 + 计时卡片,无侧栏/日报/独立训练页
+	// 主页面是跨来源发现流,来源保留为卡片标签
 	check('主页加载', (await page.locator('.zb-app').count()) === 1);
 	check('无侧栏', (await page.locator('.zb-side, .zb-nav').count()) === 0);
-	check('计时块', await page.locator('.zb-source', { hasText: '计时' }).first().isVisible());
-	check('快捷计时卡片', await page.locator('.zb-card.quick', { hasText: '1 分钟' }).first().isVisible());
+	check('紧凑计时工具条', await page.locator('.zb-timer-bar').isVisible());
+	check('跨来源卡片在同一列表', (await page.locator('.zb-feed .zb-card').count()) === 2);
+	const sources = await page.locator('.zb-source-label').allInnerTexts();
+	check('两条卡片保留各自来源', sources.includes('GitHub') && sources.includes('Hacker News'));
+	check('新发现排序优先显示新条目', (await page.locator('.zb-source-label').first().innerText()) === 'GitHub');
+	await page.locator('.zb-sort-control select').selectOption('rank');
+	check('榜单排序交错来源名次', (await page.locator('.zb-source-label').first().innerText()) === 'Hacker News');
+	await page.locator('.zb-sort-control select').selectOption('recent');
 	check('无训练页', (await page.locator('a[href="/training"]').count()) === 0);
 	check('无专注页', (await page.locator('a[href="/focus"]').count()) === 0);
 	check('无历史页', (await page.locator('a[href="/history"]').count()) === 0);
@@ -120,60 +171,56 @@ try {
 	check('声音资产可加载', soundOk);
 	await page.screenshot({ path: `${ART}/smoke-home.png`, fullPage: true });
 
-	// 快捷计时 1 分钟留在看板上
-	await page.locator('.quick .btn', { hasText: '1 分钟' }).click();
-	await page.waitForSelector('.zb-run .remain');
-	const remain1 = await page.locator('.zb-run .remain').textContent();
-	check('看板倒计时出现', /^(00:5\d|00:60|01:00)$/.test((remain1 ?? '').trim()), `remain=${remain1}`);
-	check('看板阶段标签', await page.locator('.zb-run .phase').first().isVisible());
+	// 多词搜索跨字段匹配;收藏视图可回看并在刷新后保留
+	const search = page.locator('.zb-search input');
+	await search.fill('compare local');
+	check('搜索匹配笔记中的多个词', (await page.locator('.zb-feed .zb-card').count()) === 1 && (await page.locator('.zb-card-title').innerText()) === 'example/project');
+	await search.fill('no-such-project');
+	check('搜索无结果有明确提示', await page.locator('.zb-no-results h2').isVisible());
+	await search.fill('');
+	const saveButton = page.locator('.zb-card .zb-save').first();
+	await saveButton.click();
+	check('收藏状态更新', (await saveButton.getAttribute('aria-pressed')) === 'true');
+	await page.locator('.zb-view-switch button').nth(1).click();
+	check('收藏视图显示条目', (await page.locator('.zb-feed .zb-card').count()) === 1);
+	await page.reload({ waitUntil: 'load' });
+	await page.waitForSelector('.zb-app', { timeout: 10_000 });
+	await page.locator('.zb-view-switch button').nth(1).click();
+	check('收藏刷新后仍保留', (await page.locator('.zb-feed .zb-card').count()) === 1);
+	await page.locator('.zb-card-title').click();
+	check('详情抽屉显示来源', (await page.locator('.zb-drawer-origin').innerText()).includes('GitHub'));
+	await page.screenshot({ path: `${ART}/smoke-detail.png`, fullPage: true });
+	await page.locator('.zb-drawer textarea').fill('local research notes');
+	await page.locator('.zb-drawer .btn', { hasText: '关闭' }).click();
+	await search.fill('research notes');
+	check('搜索可找到个人笔记', (await page.locator('.zb-feed .zb-card').count()) === 1);
+	await page.screenshot({ path: `${ART}/smoke-search.png`, fullPage: true });
+
+	// 单计时器设置时长、开始、暂停、继续与结束
+	await search.fill('');
+	await page.locator('.zb-duration-control input').fill('1');
+	await page.locator('.zb-timer-bar .zb-start').click();
+	await page.waitForSelector('.zb-timer-remain');
+	const remain1 = await page.locator('.zb-timer-remain').textContent();
+	check('计时器开始倒数', /^(00:5\d|00:60|01:00)$/.test((remain1 ?? '').trim()), `remain=${remain1}`);
 	await page.screenshot({ path: `${ART}/smoke-run.png` });
 
-	// 暂停/继续
-	await page.locator('.zb-run .btn', { hasText: '暂停' }).click();
-	await page.waitForSelector('.zb-run.paused');
-	const remainPaused = await page.locator('.zb-run .remain').textContent();
+	await page.locator('.zb-timer-bar .btn', { hasText: '暂停' }).click();
+	await page.waitForSelector('.zb-timer-status');
+	const remainPaused = await page.locator('.zb-timer-remain').textContent();
 	await sleep(1300);
-	const remainStill = await page.locator('.zb-run .remain').textContent();
+	const remainStill = await page.locator('.zb-timer-remain').textContent();
 	check('暂停后倒计时冻结', remainPaused === remainStill, `${remainPaused} vs ${remainStill}`);
-	await page.locator('.zb-run .btn', { hasText: '继续' }).click();
-	await page.waitForSelector('.zb-run:not(.paused)');
+	await page.locator('.zb-timer-bar .btn', { hasText: '继续' }).click();
+	await page.waitForSelector('.zb-timer-status', { state: 'detached' });
 	check('继续后恢复', true);
-
-	await page.locator('.zb-run .btn', { hasText: '结束' }).click();
-	await page.waitForSelector('.zb-run', { state: 'detached' });
+	await page.locator('.zb-timer-bar .btn', { hasText: '结束' }).click();
+	await page.waitForSelector('.zb-timer-remain', { state: 'detached' });
 	check('结束留在看板', page.url().replace(/\/$/, '') === BASE.replace(/\/$/, ''));
-
-	// 看板训练模板:跳过准备进入运动,再跳进休息
-	await page.locator('.zb-card', { hasText: '经典 30/15' }).locator('.btn', { hasText: '开始' }).click();
-	await page.waitForSelector('.zb-run .phase');
-	await page.locator('.zb-run .btn', { hasText: '跳过本段' }).click();
-	await page.waitForSelector('.phase:has-text("运动")', { timeout: 3000 });
-	check('训练在看板上进入运动', true);
-	await page.locator('.zb-run .btn', { hasText: '跳过本段' }).click();
-	await page.waitForSelector('.phase:has-text("休息")', { timeout: 3000 });
-	check('跳段后进入休息', true);
-	await page.locator('.zb-run .btn', { hasText: '结束' }).click();
-	await page.waitForSelector('.phase:has-text("休息")', { state: 'detached' });
-	check('训练结束留在看板', true);
-
-	// 两张计时可以并行,单独暂停一张不影响另一张
-	const quickCard = page.locator('.zb-card.quick', { hasText: '1 分钟' });
-	const trainingCard = page.locator('.zb-card', { hasText: '经典 30/15' });
-	await quickCard.locator('.btn', { hasText: '1 分钟' }).click();
-	await trainingCard.locator('.btn', { hasText: '开始' }).click();
-	await page.waitForFunction(() => document.querySelectorAll('.zb-run').length === 2);
-	check('两张计时同时运行', (await page.locator('.zb-run').count()) === 2);
-	await quickCard.locator('.btn', { hasText: '暂停' }).click();
-	await page.waitForSelector('.zb-card.quick.zb-run.paused');
-	const trainingRemainBefore = await trainingCard.locator('.remain').textContent();
-	await sleep(1300);
-	const trainingRemainAfter = await trainingCard.locator('.remain').textContent();
-	check('暂停一张时另一张继续走', trainingRemainBefore !== trainingRemainAfter);
-	await quickCard.locator('.btn', { hasText: '继续' }).click();
-	await trainingCard.locator('.btn', { hasText: '结束' }).click();
-	await quickCard.locator('.btn', { hasText: '结束' }).click();
-	await page.waitForFunction(() => document.querySelectorAll('.zb-run').length === 0);
-	check('多卡均可独立结束', (await page.locator('.zb-run').count()) === 0);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.screenshot({ path: `${ART}/smoke-mobile.png`, fullPage: true });
+	const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+	check('手机宽度无横向溢出', !mobileOverflow);
 
 	check('页面运行错误为零', errors.length === 0, errors.join('; '));
 
