@@ -7,6 +7,7 @@ import { fetchText } from '../platform/web/http.ts';
 
 const TREND_KEY = 'zibloo.board.trends.v1';
 const PIN_KEY = 'zibloo.board.pinned.v1';
+const SAVED_KEY = 'zibloo.board.saved.v1';
 
 export type PinnedCard = {
 	id: string;
@@ -17,12 +18,16 @@ export type PinnedCard = {
 export const board: {
 	trends: TrendRecord[];
 	pinned: PinnedCard[];
+	savedIds: string[];
+	saveError: boolean;
 	collecting: boolean;
 	collectError: string | null;
 	lastCollectAt: number | null;
 } = $state({
 	trends: [],
 	pinned: [],
+	savedIds: [],
+	saveError: false,
 	collecting: false,
 	collectError: null,
 	lastCollectAt: null
@@ -111,6 +116,26 @@ export function loadBoard(): void {
 		board.pinned = loadPinned(pinRaw);
 	} catch {
 		board.pinned = [];
+	}
+	try {
+		const saved: unknown = JSON.parse(localStorage.getItem(SAVED_KEY) ?? '[]');
+		board.savedIds = [...new Set(stringList(saved))];
+	} catch {
+		board.savedIds = [];
+	}
+}
+
+export function toggleSaved(id: string): void {
+	loadBoard();
+	const next = board.savedIds.includes(id)
+		? board.savedIds.filter((savedId) => savedId !== id)
+		: [...board.savedIds, id];
+	try {
+		localStorage.setItem(SAVED_KEY, JSON.stringify(next));
+		board.savedIds = next;
+		board.saveError = false;
+	} catch {
+		board.saveError = true;
 	}
 }
 
@@ -221,7 +246,10 @@ export async function collectTrends(): Promise<void> {
 			})
 		);
 		if (hits.length > 0) {
-			board.trends = mergeTrends(board.trends, hits, today).slice(-400);
+			const merged = mergeTrends(board.trends, hits, today);
+			const keptIds = new Set(merged.slice(-400).map((item) => item.id));
+			const savedIds = new Set(board.savedIds);
+			board.trends = merged.filter((item) => keptIds.has(item.id) || savedIds.has(item.id));
 			board.lastCollectAt = Date.now();
 			persistTrends();
 		}

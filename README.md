@@ -2,8 +2,8 @@
 
 Zibloo 是个人热点与计时看板,当前只开发和维护网页端。其他平台的开发已暂停。
 
-- 按来源浏览 GitHub、Hacker News、Lobsters 等社区热点,在卡片里记笔记并打开来源。
-- 训练、专注和快捷计时都在看板卡片上运行,支持多张同时计时。
+- 在一条信息流里发现 GitHub、Hacker News、Lobsters 等社区项目,搜索并收藏感兴趣的条目,查看原始指标和来源。
+- 看板提供一个可调时长的计时器,支持暂停、继续和结束。
 - 计时提示音依赖网页运行;浏览器在后台可能降低计时精度,关闭页面后不会触发计时提示。
 
 产品范围见 [`docs/intent.md`](docs/intent.md),当前实现见 [`docs/architecture.md`](docs/architecture.md)。

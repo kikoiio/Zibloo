@@ -1,7 +1,8 @@
 ---
-status: accepted
+status: superseded
 date: 2026-11-01
 supersedes: 0007
+superseded-by: 0010
 ---
 
 # 看板按来源分组,去掉侧栏和日报
